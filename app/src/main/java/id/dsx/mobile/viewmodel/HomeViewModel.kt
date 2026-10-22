@@ -124,7 +124,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.value = _state.value.copy(creating = true, error = null)
             try {
-                val json = getApplication().assets.open(assetPath).bufferedReader().readText()
+                val json = getApplication<Application>().assets.open(assetPath).bufferedReader().readText()
                 val form = com.google.gson.JsonParser.parseString(json).asJsonObject
                 val result = repo.createFromForm(form, name = form.getAsJsonObject("meta")?.get("title")?.asString)
                 _state.value = _state.value.copy(creating = false)
@@ -141,8 +141,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun importProjectZip(uri: android.net.Uri, onCreated: (String) -> Unit) {
         viewModelScope.launch {
             _state.value = _state.value.copy(creating = true, error = null)
-            val root = java.io.File(getApplication().filesDir, "proyek")
-            val result = id.dsx.mobile.data.ProjectZip.importZip(getApplication(), uri, root)
+            val root = java.io.File(getApplication<Application>().filesDir, "proyek")
+            val result = id.dsx.mobile.data.ProjectZip.importZip(getApplication<Application>(), uri, root)
             _state.value = _state.value.copy(creating = false)
             result.fold(
                 onSuccess = { dir ->
