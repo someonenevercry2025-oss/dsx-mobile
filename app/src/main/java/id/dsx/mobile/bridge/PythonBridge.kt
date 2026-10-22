@@ -101,6 +101,10 @@ object PythonBridge {
         call("new_block_json", type)
     }
 
+    suspend fun toBlocks(formJson: String): BridgeResponse = withContext(Dispatchers.Default) {
+        call("to_blocks", formJson)
+    }
+
     suspend fun listPresets(presetsRoot: String): BridgeResponse = withContext(Dispatchers.Default) {
         call("list_presets", presetsRoot)
     }

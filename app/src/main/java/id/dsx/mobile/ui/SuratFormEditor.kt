@@ -22,6 +22,8 @@ import id.dsx.mobile.ui.components.FormSwitch
 import id.dsx.mobile.ui.components.FormTextField
 import id.dsx.mobile.ui.components.ImagePickerRow
 import id.dsx.mobile.ui.components.KvListEditor
+import id.dsx.mobile.ui.components.LogoModeSelector
+import id.dsx.mobile.ui.components.isTwoLogos
 import id.dsx.mobile.ui.components.SectionCard
 import id.dsx.mobile.ui.components.StringListEditor
 import kotlinx.coroutines.launch
@@ -109,6 +111,27 @@ private fun SuratFormBody(
         }
     }
 
+    val logoKananPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            onStatus("Memproses gambar…")
+            val result = ImageHelper.importImage(context, projectDir, uri, "logo_kanan")
+            result.fold(
+                onSuccess = { rel ->
+                    obj("kop").addProperty("logo_kanan", rel)
+                    onFormChange(form.deepCopy())
+                    onStatus(null)
+                },
+                onFailure = { e ->
+                    onStatus(null)
+                    onStatus("Gagal gambar: ${e.message}")
+                },
+            )
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -141,9 +164,18 @@ private fun SuratFormBody(
                 Spacer(Modifier.height(8.dp))
                 FormTextField("Kontak", str(kop, "kontak")) { setStr(kop, "kontak", it) }
                 Spacer(Modifier.height(10.dp))
+                val twoLogos = isTwoLogos(
+                    kop.get("logo_mode")?.takeIf { it.isJsonPrimitive }?.asString,
+                    kop.get("logo_kanan")?.takeIf { it.isJsonPrimitive }?.asString,
+                )
+                LogoModeSelector(twoLogos) { two ->
+                    kop.addProperty("logo_mode", if (two) "two" else "one")
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(6.dp))
                 ImagePickerRow(
-                    label = "Logo",
-                    currentPath = kop.get("logo")?.takeIf { !it.isJsonNull }?.asString,
+                    label = if (twoLogos) "Logo kiri" else "Logo",
+                    currentPath = kop.get("logo")?.takeIf { it.isJsonPrimitive }?.asString,
                     onPick = {
                         logoPicker.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
@@ -154,6 +186,22 @@ private fun SuratFormBody(
                         onFormChange(form.deepCopy())
                     },
                 )
+                if (twoLogos) {
+                    Spacer(Modifier.height(8.dp))
+                    ImagePickerRow(
+                        label = "Logo kanan",
+                        currentPath = kop.get("logo_kanan")?.takeIf { it.isJsonPrimitive }?.asString,
+                        onPick = {
+                            logoKananPicker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        },
+                        onClear = {
+                            kop.add("logo_kanan", com.google.gson.JsonNull.INSTANCE)
+                            onFormChange(form.deepCopy())
+                        },
+                    )
+                }
             }
         }
 

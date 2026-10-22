@@ -29,6 +29,8 @@ import id.dsx.mobile.ui.components.FormSwitch
 import id.dsx.mobile.ui.components.FormTextField
 import id.dsx.mobile.ui.components.ImagePickerRow
 import id.dsx.mobile.ui.components.KvListEditor
+import id.dsx.mobile.ui.components.LogoModeSelector
+import id.dsx.mobile.ui.components.isTwoLogos
 import id.dsx.mobile.ui.components.StringListEditor
 import kotlinx.coroutines.launch
 import java.io.File
@@ -74,6 +76,21 @@ fun BlockDetailEditor(
                     commit()
                 },
                 onFailure = { /* swallow for now */ },
+            )
+        }
+    }
+
+    val imagePickerKanan = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            ImageHelper.importImage(context, projectDir, uri, "logo_kanan").fold(
+                onSuccess = { rel ->
+                    draft.addProperty("logo_kanan", rel)
+                    commit()
+                },
+                onFailure = { },
             )
         }
     }
@@ -154,9 +171,18 @@ fun BlockDetailEditor(
                     Spacer(Modifier.height(8.dp))
                     FormTextField("Kontak", str("kontak")) { setStr("kontak", it); commit() }
                     Spacer(Modifier.height(8.dp))
+                    val twoLogos = isTwoLogos(
+                        draft.get("logo_mode")?.takeIf { it.isJsonPrimitive }?.asString,
+                        draft.get("logo_kanan")?.takeIf { it.isJsonPrimitive }?.asString,
+                    )
+                    LogoModeSelector(twoLogos) { two ->
+                        draft.addProperty("logo_mode", if (two) "two" else "one")
+                        commit()
+                    }
+                    Spacer(Modifier.height(6.dp))
                     ImagePickerRow(
-                        "Logo",
-                        draft.get("logo")?.takeIf { !it.isJsonNull }?.asString,
+                        if (twoLogos) "Logo kiri" else "Logo",
+                        draft.get("logo")?.takeIf { it.isJsonPrimitive }?.asString,
                         onPick = {
                             imagePicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
@@ -167,6 +193,22 @@ fun BlockDetailEditor(
                             commit()
                         },
                     )
+                    if (twoLogos) {
+                        Spacer(Modifier.height(8.dp))
+                        ImagePickerRow(
+                            "Logo kanan",
+                            draft.get("logo_kanan")?.takeIf { it.isJsonPrimitive }?.asString,
+                            onPick = {
+                                imagePickerKanan.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                )
+                            },
+                            onClear = {
+                                draft.add("logo_kanan", com.google.gson.JsonNull.INSTANCE)
+                                commit()
+                            },
+                        )
+                    }
                 }
                 "identitas_surat" -> {
                     FormTextField("Nomor", str("nomor")) { setStr("nomor", it); commit() }

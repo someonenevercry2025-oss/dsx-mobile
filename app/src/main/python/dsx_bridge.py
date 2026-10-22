@@ -23,6 +23,8 @@ from dsx.diagnostics import Diagnostic
 from dsx.form.blocks import form_from_preset, list_block_types, new_block
 from dsx.form.dsx_to_form import dsx_to_form as _dsx_to_form
 from dsx.form.format_dsx import format_dsx as _format_dsx
+from dsx.form.blocks import surat_as_blocks
+from dsx.form.generator import generate_dsx as _generate_dsx_text
 from dsx.form.generator import generate_project
 from dsx.form.models import default_form, load_form
 from dsx.form.validate import validate_form as _validate_form
@@ -255,6 +257,27 @@ def dsx_to_form(text: str) -> str:
         return _ok(form)
     except Exception as e:
         return _fail("DSX_TO_FORM_FAILED", str(e), traceback=traceback.format_exc())
+
+
+def to_blocks(form_json: str) -> str:
+    """Ubah form templat (surat/laporan/makalah) menjadi form kustom berbasis blok."""
+    try:
+        form = _parse_json(form_json)
+        if not isinstance(form, dict):
+            return _fail("INVALID_FORM", "Form harus objek JSON")
+        kind = str(form.get("kind") or "")
+        if kind == "custom":
+            return _ok(form)
+        if kind == "surat-resmi":
+            new = surat_as_blocks(form)
+        else:
+            base = default_form(kind)
+            base.update(form)
+            new = _dsx_to_form(_generate_dsx_text(base))
+        new["kind"] = "custom"
+        return _ok(new)
+    except Exception as e:
+        return _fail("TO_BLOCKS_FAILED", str(e), traceback=traceback.format_exc())
 
 
 def format_dsx(text: str) -> str:

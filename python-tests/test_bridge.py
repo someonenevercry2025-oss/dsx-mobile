@@ -68,6 +68,17 @@ class BridgeContractTest(unittest.TestCase):
         form = json.loads(b.default_form_kind("surat-resmi"))["data"]
         self.assertIsInstance(form["ttd"], list)
 
+    def test_to_blocks_all_templates(self):
+        for kind in ("surat-resmi", "laporan", "makalah"):
+            form = json.loads(b.default_form_kind(kind))["data"]
+            r = json.loads(b.to_blocks(json.dumps(form)))
+            self.assertTrue(r["ok"], r)
+            self.assertEqual(r["data"]["kind"], "custom")
+            self.assertGreater(len(r["data"]["blocks"]), 3)
+            with tempfile.TemporaryDirectory() as td:
+                self.assertTrue(json.loads(b.generate_dsx(json.dumps(r["data"]), td))["ok"])
+                self.assertTrue(json.loads(b.build(td, "docx"))["ok"])
+
     def test_preset_roundtrip(self):
         with tempfile.TemporaryDirectory() as td:
             form = json.loads(b.default_form_kind("custom"))["data"]

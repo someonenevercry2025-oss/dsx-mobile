@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -213,6 +214,24 @@ fun KvListEditor(
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(Modifier.width(4.dp))
             Text(addLabel)
+        }
+    }
+}
+
+/** logo_mode: "one" | "two" | "auto" (auto = dua logo bila logo kanan terisi). */
+fun isTwoLogos(mode: String?, logoKanan: String?): Boolean =
+    mode == "two" || (mode != "one" && !logoKanan.isNullOrBlank())
+
+@Composable
+fun LogoModeSelector(twoLogos: Boolean, onChange: (Boolean) -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        Text("Jumlah logo", style = MaterialTheme.typography.labelLarge)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(selected = !twoLogos, onClick = { onChange(false) })
+            Text("Satu logo")
+            Spacer(Modifier.width(16.dp))
+            RadioButton(selected = twoLogos, onClick = { onChange(true) })
+            Text("Dua logo")
         }
     }
 }

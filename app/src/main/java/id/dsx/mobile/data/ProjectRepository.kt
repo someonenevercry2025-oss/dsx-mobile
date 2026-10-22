@@ -190,6 +190,11 @@ class ProjectRepository(private val context: Context) {
         updateMeta(meta.copy(mode = mode, updatedAt = isoNow()))
     }
 
+    fun setKind(id: String, kind: String) {
+        val meta = loadMeta(id) ?: return
+        updateMeta(meta.copy(kind = kind, mode = "form", updatedAt = isoNow()))
+    }
+
     fun loadForm(id: String): JsonObject? {
         val f = File(projectDir(id), "form.json")
         if (!f.exists()) return null

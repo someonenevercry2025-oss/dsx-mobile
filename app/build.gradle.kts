@@ -107,6 +107,8 @@ android {
 chaquopy {
     defaultConfig {
         version = "3.11"
+        // python-docx membaca templates/*.xml lewat path file; harus diekstrak ke disk
+        extractPackages.add("docx")
         pip {
             install("python-docx")
             install("lxml")

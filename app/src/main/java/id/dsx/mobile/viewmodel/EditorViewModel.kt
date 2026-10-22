@@ -199,6 +199,28 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     }
 
 
+    /** Ubah templat (surat/laporan/makalah) jadi form blok agar struktur bisa diubah bebas. */
+    fun convertToBlocks() {
+        viewModelScope.launch {
+            val form = _state.value.form ?: return@launch
+            val resp = PythonBridge.toBlocks(gson.toJson(form))
+            val newForm = resp.dataAsObject()
+            if (!resp.ok || newForm == null) {
+                _state.value = _state.value.copy(error = resp.firstErrorMessage())
+                return@launch
+            }
+            saveJob?.cancel()
+            repo.saveForm(projectId, newForm)
+            repo.setKind(projectId, "custom")
+            _state.value = _state.value.copy(
+                form = newForm,
+                mode = "form",
+                meta = repo.loadMeta(projectId),
+                statusMessage = "Struktur diubah menjadi blok",
+            )
+        }
+    }
+
     fun addBlock(type: String) {
         viewModelScope.launch {
             val resp = PythonBridge.newBlock(type)

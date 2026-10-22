@@ -76,6 +76,7 @@ fun EditorScreen(
     var showSavePreset by remember { mutableStateOf(false) }
     var confirmMode by remember { mutableStateOf<String?>(null) }
     var presetName by remember { mutableStateOf("") }
+    var confirmConvert by remember { mutableStateOf(false) }
     var editingBlockIndex by remember { mutableStateOf<Int?>(null) }
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -182,6 +183,13 @@ fun EditorScreen(
                     },
                     text = { Text("Kode") },
                 )
+            }
+
+            if (kind != "custom" && state.mode == "form" && state.form != null) {
+                TextButton(
+                    onClick = { confirmConvert = true },
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                ) { Text("Ubah struktur: tambah, hapus, ganti bagian") }
             }
 
             Box(Modifier.weight(1f)) {
@@ -335,6 +343,29 @@ fun EditorScreen(
             },
             dismissButton = {
                 TextButton(onClick = { confirmMode = null }) { Text("Batal") }
+            },
+        )
+    }
+
+    if (confirmConvert) {
+        AlertDialog(
+            onDismissRequest = { confirmConvert = false },
+            title = { Text("Ubah struktur dokumen") },
+            text = {
+                Text(
+                    "Templat diubah menjadi daftar blok yang bisa ditambah, dihapus, " +
+                        "diurutkan, dan diedit. Hasil dokumen bisa sedikit berbeda dan " +
+                        "tidak bisa dikembalikan ke form templat. Lanjutkan?",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmConvert = false
+                    viewModel.convertToBlocks()
+                }) { Text("Lanjut") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmConvert = false }) { Text("Batal") }
             },
         )
     }
