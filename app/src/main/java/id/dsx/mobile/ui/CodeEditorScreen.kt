@@ -17,6 +17,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,10 +31,15 @@ import androidx.compose.ui.unit.sp
 
 data class CodeSnippet(val label: String, val code: String)
 
+/**
+ * Snippet templates. In Kotlin raw strings, \n is two characters (backslash + n),
+ * which is exactly what DSX expects for spacer cells.
+ */
 val DSX_SNIPPETS = listOf(
     CodeSnippet(
         "Kop teks",
-        """TABLE(
+        """
+TABLE(
   border="bottom",
   border_width=1.5,
   border_color="000000",
@@ -45,11 +51,12 @@ val DSX_SNIPPETS = listOf(
     ITALIC("Alamat / kontak")
   ], align="center")]]
 )
-""",
+""".trimStart(),
     ),
     CodeSnippet(
         "Kop + logo",
-        """TABLE(
+        """
+TABLE(
   border="bottom",
   border_width=1.5,
   border_color="000000",
@@ -60,49 +67,41 @@ val DSX_SNIPPETS = listOf(
     CELL([BOLD("NAMA LEMBAGA"), "\n", ITALIC("Alamat")], align="center", valign="center")
   ]]
 )
-""",
+""".trimStart(),
     ),
     CodeSnippet(
         "TTD 2 kolom",
-        "TABLE(
-" +
-        "  border=\"none\",
-" +
-        "  cell_padding=0.05cm,
-" +
-        "  widths=[\"*\", \"*\"],
-" +
-        "  rows=[
-" +
-        "    [CELL(\"Mengetahui,\", align=\"center\"), CELL(\"Hormat kami,\", align=\"center\")],
-" +
-        "    [CELL(\"Jabatan kiri\", align=\"center\"), CELL(\"Jabatan kanan\", align=\"center\")],
-" +
-        "    [CELL(\"\\n\\n\\n\\n\", align=\"center\"), CELL(\"\\n\\n\\n\\n\", align=\"center\")],
-" +
-        "    [CELL([BOLD(\"Nama kiri\")], align=\"center\"), CELL([BOLD(\"Nama kanan\")], align=\"center\")],
-" +
-        "    [CELL(\"NIDN: ...\", align=\"center\"), CELL(\"NRA: ...\", align=\"center\")]
-" +
-        "  ]
-" +
-        ")
-",
+        """
+TABLE(
+  border="none",
+  cell_padding=0.05cm,
+  widths=["*", "*"],
+  rows=[
+    [CELL("Mengetahui,", align="center"), CELL("Hormat kami,", align="center")],
+    [CELL("Jabatan kiri", align="center"), CELL("Jabatan kanan", align="center")],
+    [CELL("\n\n\n\n", align="center"), CELL("\n\n\n\n", align="center")],
+    [CELL([BOLD("Nama kiri")], align="center"), CELL([BOLD("Nama kanan")], align="center")],
+    [CELL("NIDN: ...", align="center"), CELL("NRA: ...", align="center")]
+  ]
+)
+""".trimStart(),
     ),
     CodeSnippet(
         "Tembusan",
-        """P("Tembusan:", space_after=2)
+        """
+P("Tembusan:", space_after=2)
 P("1. ...", space_after=0)
 P("2. Arsip", space_after=0)
-""",
+""".trimStart(),
     ),
     CodeSnippet(
         "Footer",
-        """HR(style="solid", thickness=1.0, color="000000", space_before=4, space_after=6)
-P([ITALIC("\\"Motto\\"")], align="center", space_after=2)
+        """
+HR(style="solid", thickness=1.0, color="000000", space_before=4, space_after=6)
+P([ITALIC("\"Motto\"")], align="center", space_after=2)
 P("Instagram: @akun", align="center", space_after=4)
 HR(style="solid", thickness=1.0, color="000000", space_before=2, space_after=0)
-""",
+""".trimStart(),
     ),
 )
 
@@ -119,8 +118,8 @@ fun CodeEditorPane(
 ) {
     var showSnippets by remember { mutableStateOf(false) }
     var field by remember { mutableStateOf(TextFieldValue(text, TextRange(text.length))) }
-    // Sync when parent text changes (snippet / asset insert) without fighting user typing
-    androidx.compose.runtime.LaunchedEffect(text) {
+
+    LaunchedEffect(text) {
         if (text != field.text) {
             field = TextFieldValue(text, TextRange(text.length))
         }
@@ -172,7 +171,10 @@ fun CodeEditorPane(
                     .padding(8.dp)
                     .verticalScroll(rememberScrollState()),
             ) {
-                Text("Diagnostik (ketuk untuk loncat ke baris)", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    "Diagnostik (ketuk untuk loncat ke baris)",
+                    style = MaterialTheme.typography.labelLarge,
+                )
                 diagnostics.forEach { d ->
                     val line = Regex("""L(\d+):""").find(d)?.groupValues?.getOrNull(1)?.toIntOrNull()
                     Text(
@@ -182,11 +184,14 @@ fun CodeEditorPane(
                         modifier = Modifier
                             .padding(vertical = 2.dp)
                             .then(
-                                if (line != null) Modifier.clickable {
-                                    field = jumpTextToLine(field.text, line)
-                                    onJumpToLine(line)
-                                }
-                                else Modifier,
+                                if (line != null) {
+                                    Modifier.clickable {
+                                        field = jumpTextToLine(field.text, line)
+                                        onJumpToLine(line)
+                                    }
+                                } else {
+                                    Modifier
+                                },
                             ),
                     )
                 }
@@ -198,8 +203,10 @@ fun CodeEditorPane(
 /** Move cursor approximately to a 1-based line number. */
 fun jumpTextToLine(text: String, line: Int): TextFieldValue {
     val lines = text.split('\n')
-    val idx = (line - 1).coerceIn(0, lines.lastIndex)
+    val idx = (line - 1).coerceIn(0, (lines.size - 1).coerceAtLeast(0))
     var offset = 0
-    for (i in 0 until idx) offset += lines[i].length + 1
+    for (i in 0 until idx) {
+        offset += lines[i].length + 1
+    }
     return TextFieldValue(text, TextRange(offset, offset))
 }
