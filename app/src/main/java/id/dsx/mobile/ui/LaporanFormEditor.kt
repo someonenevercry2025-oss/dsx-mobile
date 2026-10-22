@@ -27,8 +27,25 @@ import id.dsx.mobile.ui.components.FormTextField
 import id.dsx.mobile.ui.components.SectionCard
 import id.dsx.mobile.ui.components.StringListEditor
 
+/**
+ * Editor bekerja pada SALINAN form. Mengubah objek state secara langsung membuat
+ * salinan yang dikirim ke ViewModel dianggap sama (equals) sehingga StateFlow tidak
+ * memancarkan perubahan dan ketikan dibatalkan.
+ */
 @Composable
 fun LaporanFormEditor(
+    form: JsonObject,
+    onFormChange: (JsonObject) -> Unit,
+) {
+    val work = androidx.compose.runtime.remember(form) { form.deepCopy() }
+    LaporanFormBody(
+        form = work,
+        onFormChange = onFormChange,
+    )
+}
+
+@Composable
+private fun LaporanFormBody(
     form: JsonObject,
     onFormChange: (JsonObject) -> Unit,
 ) {

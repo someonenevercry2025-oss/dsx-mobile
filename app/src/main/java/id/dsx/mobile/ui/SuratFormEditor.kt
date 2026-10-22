@@ -30,8 +30,29 @@ import java.io.File
 /**
  * Structured editor for kind=surat-resmi form.json fields.
  */
+/**
+ * Editor bekerja pada SALINAN form. Mengubah objek state secara langsung membuat
+ * salinan yang dikirim ke ViewModel dianggap sama (equals) sehingga StateFlow tidak
+ * memancarkan perubahan dan ketikan dibatalkan.
+ */
 @Composable
 fun SuratFormEditor(
+    form: JsonObject,
+    projectDir: File,
+    onFormChange: (JsonObject) -> Unit,
+    onStatus: (String?) -> Unit = {},
+) {
+    val work = androidx.compose.runtime.remember(form) { form.deepCopy() }
+    SuratFormBody(
+        form = work,
+        projectDir = projectDir,
+        onFormChange = onFormChange,
+        onStatus = onStatus,
+    )
+}
+
+@Composable
+private fun SuratFormBody(
     form: JsonObject,
     projectDir: File,
     onFormChange: (JsonObject) -> Unit,
