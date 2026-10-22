@@ -38,6 +38,10 @@ data class EditorUiState(
     val blockCatalog: List<JsonObject> = emptyList(),
     val previewHtmlPath: String? = null,
     val showPreview: Boolean = false,
+    val assetPaths: List<String> = emptyList(),
+    val lastSavedAt: String? = null,
+    val codePreferred: Boolean = false,
+    val validationHints: List<String> = emptyList(),
 )
 
 class EditorViewModel(app: Application) : AndroidViewModel(app) {
@@ -93,6 +97,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             delay(600)
             val form = _state.value.form ?: return@launch
             repo.saveForm(projectId, form)
+            // form edits mean form is source again if user stays on form tab
+            val ts = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date())
+            _state.value = _state.value.copy(lastSavedAt = ts)
         }
     }
 
@@ -101,6 +109,9 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         saveJob = viewModelScope.launch {
             delay(600)
             repo.saveDsx(projectId, _state.value.dsxText)
+            val ts = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date())
+            _state.value = _state.value.copy(lastSavedAt = ts, codePreferred = true)
         }
     }
 
@@ -272,7 +283,9 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
 
     fun build(fmt: String = "docx") {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isBusy = true, error = null, buildResult = null, statusMessage = "Membangun…")
+            val hints = validateBeforeBuild()
+            // non-blocking warnings only
+            _state.value = _state.value.copy(isBusy = true, error = null, buildResult = null, statusMessage = "Membangun…", validationHints = hints)
             val dir = repo.projectDir(projectId).absolutePath
 
             // If form mode, regenerate document.dsx first
@@ -448,9 +461,49 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(statusMessage = msg)
     }
 
+    
+    fun validateBeforeBuild(): List<String> {
+        val hints = mutableListOf<String>()
+        if (_state.value.mode == "form") {
+            val form = _state.value.form
+            val perihal = form?.getAsJsonObject("identitas")?.get("perihal")?.asString
+            val yth = form?.getAsJsonObject("penerima")?.get("yth")?.asString
+            if (perihal.isNullOrBlank()) hints.add("Perihal masih kosong")
+            if (yth.isNullOrBlank()) hints.add("Penerima (Yth.) masih kosong")
+        } else if (_state.value.dsxText.isBlank()) {
+            hints.add("document.dsx kosong")
+        }
+        _state.value = _state.value.copy(validationHints = hints)
+        return hints
+    }
+
+    fun clearCodePreferred() {
+        _state.value = _state.value.copy(codePreferred = false)
+        // when regenerating from form
+    }
+
     fun clearStatus() {
         _state.value = _state.value.copy(statusMessage = null)
     }
+
+    fun refreshAssets() {
+        val dir = File(repo.projectDir(projectId), "assets")
+        val list = dir.listFiles()
+            ?.filter { it.isFile && !it.name.startsWith(".") }
+            ?.map { "assets/${it.name}" }
+            ?.sorted()
+            ?: emptyList()
+        _state.value = _state.value.copy(assetPaths = list)
+    }
+
+    fun insertIntoDsx(snippet: String) {
+        val cur = _state.value.dsxText
+        val next = if (cur.isBlank()) snippet else cur.trimEnd() + "\n" + snippet + "\n"
+        _state.value = _state.value.copy(dsxText = next)
+        scheduleSaveDsx()
+    }
+
+
 
     /** Simpan perubahan yang masih tertunda (debounce) saat layar ditutup. */
     override fun onCleared() {

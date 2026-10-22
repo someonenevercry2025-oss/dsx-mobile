@@ -119,6 +119,43 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
+    
+    fun createFromBuiltInAsset(assetPath: String, onCreated: (String) -> Unit) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(creating = true, error = null)
+            try {
+                val json = getApplication().assets.open(assetPath).bufferedReader().readText()
+                val form = com.google.gson.JsonParser.parseString(json).asJsonObject
+                val result = repo.createFromForm(form, name = form.getAsJsonObject("meta")?.get("title")?.asString)
+                _state.value = _state.value.copy(creating = false)
+                result.fold(
+                    onSuccess = { meta -> refresh(); onCreated(meta.id) },
+                    onFailure = { e -> _state.value = _state.value.copy(error = e.message) },
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(creating = false, error = e.message)
+            }
+        }
+    }
+
+    fun importProjectZip(uri: android.net.Uri, onCreated: (String) -> Unit) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(creating = true, error = null)
+            val root = java.io.File(getApplication().filesDir, "proyek")
+            val result = id.dsx.mobile.data.ProjectZip.importZip(getApplication(), uri, root)
+            _state.value = _state.value.copy(creating = false)
+            result.fold(
+                onSuccess = { dir ->
+                    refresh()
+                    onCreated(dir.name)
+                },
+                onFailure = { e ->
+                    _state.value = _state.value.copy(error = e.message)
+                },
+            )
+        }
+    }
+
     fun clearError() {
         _state.value = _state.value.copy(error = null)
     }

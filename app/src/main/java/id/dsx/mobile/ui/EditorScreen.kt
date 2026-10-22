@@ -73,6 +73,7 @@ fun EditorScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showBlockPicker by remember { mutableStateOf(false) }
+    var showAssets by remember { mutableStateOf(false) }
     var showSavePreset by remember { mutableStateOf(false) }
     var confirmMode by remember { mutableStateOf<String?>(null) }
     var presetName by remember { mutableStateOf("") }
@@ -126,6 +127,24 @@ fun EditorScreen(
                     }
                 },
                 actions = {
+                    TextButton(onClick = {
+                        viewModel.refreshAssets()
+                        showAssets = true
+                    }) { Text("Aset") }
+                    TextButton(onClick = {
+                        val dir = projectDir
+                        val out = java.io.File(context.cacheDir, "${dir.name}.zip")
+                        val r = id.dsx.mobile.data.ProjectZip.exportProject(dir, out)
+                        r.onSuccess { f ->
+                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", f)
+                            val share = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/zip"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(share, "Ekspor proyek ZIP"))
+                        }
+                    }) { Text("ZIP") }
                     TextButton(onClick = {
                         presetName = state.meta?.name?.replace(" ", "-")?.take(32) ?: "preset"
                         showSavePreset = true
@@ -192,7 +211,34 @@ fun EditorScreen(
                 ) { Text("Ubah struktur: tambah, hapus, ganti bagian") }
             }
 
-            Box(Modifier.weight(1f)) {
+            
+            if (state.lastSavedAt != null || state.codePreferred || state.validationHints.isNotEmpty()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+                    if (state.lastSavedAt != null) {
+                        Text(
+                            "Tersimpan ${state.lastSavedAt}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (state.codePreferred) {
+                        Text(
+                            "  ·  Mode kode diutamakan (edit manual)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                }
+                state.validationHints.forEach { h ->
+                    Text(
+                        "⚠ $h",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                }
+            }
+Box(Modifier.weight(1f)) {
                 if (state.mode == "kode") {
                     CodeEditorPane(
                         text = state.dsxText,
@@ -200,6 +246,10 @@ fun EditorScreen(
                         onTextChange = { viewModel.updateDsxText(it) },
                         onFormat = { viewModel.formatCode() },
                         onCheck = { viewModel.checkCode() },
+                        onOpenAssets = {
+                            viewModel.refreshAssets()
+                            showAssets = true
+                        },
                     )
                 } else {
                     val form = state.form
@@ -428,6 +478,25 @@ fun EditorScreen(
                 }
             }
         }
+    }
+
+    if (showAssets) {
+        val assetItems = state.assetPaths.map { path ->
+            val f = java.io.File(projectDir, path)
+            AssetItem(
+                name = path.substringAfterLast('/'),
+                relativePath = path,
+                size = if (f.exists()) f.length() else 0L,
+            )
+        }
+        AssetsPanel(
+            projectDir = projectDir,
+            assets = assetItems,
+            onRefresh = { viewModel.refreshAssets() },
+            onInsertCode = { snippet -> viewModel.insertIntoDsx(snippet) },
+            onDismiss = { showAssets = false },
+            codeMode = state.mode == "kode",
+        )
     }
 
     if (showBlockPicker) {

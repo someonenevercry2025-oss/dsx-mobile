@@ -77,6 +77,13 @@ fun HomeScreen(
         }
     }
 
+    val importZipLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        viewModel.importProjectZip(uri) { id -> onOpenProject(id) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -165,6 +172,16 @@ fun HomeScreen(
                 showNewDialog = false
                 showPresetDialog = true
             },
+            onZsmTemplate = {
+                showNewDialog = false
+                viewModel.createFromBuiltInAsset("form-presets/zsm-izin-kunjungan.json") { id ->
+                    onOpenProject(id)
+                }
+            },
+            onImportZip = {
+                showNewDialog = false
+                importZipLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+            },
         )
     }
 
@@ -230,6 +247,8 @@ private fun NewProjectDialog(
     onSelectKind: (String) -> Unit,
     onImportDsx: () -> Unit,
     onFromTemplate: () -> Unit,
+    onZsmTemplate: () -> Unit = {},
+    onImportZip: () -> Unit = {},
 ) {
     val options = listOf(
         "surat-resmi" to "Surat resmi",
@@ -251,8 +270,14 @@ private fun NewProjectDialog(
                     }
                 }
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                TextButton(onClick = onZsmTemplate, modifier = Modifier.fillMaxWidth()) {
+                    Text("Template ZSM — Izin Kunjungan", modifier = Modifier.fillMaxWidth())
+                }
                 TextButton(onClick = onImportDsx, modifier = Modifier.fillMaxWidth()) {
                     Text("Impor document.dsx", modifier = Modifier.fillMaxWidth())
+                }
+                TextButton(onClick = onImportZip, modifier = Modifier.fillMaxWidth()) {
+                    Text("Impor proyek ZIP", modifier = Modifier.fillMaxWidth())
                 }
                 if (hasPresets) {
                     TextButton(onClick = onFromTemplate, modifier = Modifier.fillMaxWidth()) {

@@ -50,7 +50,9 @@ _SURAT_DEFAULT: dict[str, Any] = {
         "baris_tambahan": [],
         "di": "Tempat",
     },
+    "salam_buka": "",
     "pembuka": "Dengan hormat,",
+    "salam_tutup": "",
     "paragraf": [
         "Dalam rangka menambah wawasan serta meningkatkan apresiasi terhadap seni, sejarah, dan kebudayaan, kami bermaksud mengajukan permohonan izin untuk melaksanakan kunjungan edukatif.",
         "Kegiatan ini bertujuan memperluas pengetahuan anggota mengenai sejarah, seni, dan budaya, serta menjadi sarana pembelajaran langsung.",
@@ -73,14 +75,35 @@ _SURAT_DEFAULT: dict[str, Any] = {
     "penutup_hormat": "Hormat kami,",
     "organisasi_bawah": ["UKM Seni Zaorah Sapan Matappa", "STKIP Andi Matappa"],
     "ttd": [
-        {"jabatan": "Sekretaris Umum", "nama": "[Nama Sekretaris]"},
-        {"jabatan": "Ketua Umum", "nama": "[Nama Ketua]"},
+        {
+            "label": "",
+            "jabatan": "Sekretaris Umum",
+            "nama": "[Nama Sekretaris]",
+            "identitas": "",
+            "jabatan_bawah": "",
+        },
+        {
+            "label": "",
+            "jabatan": "Ketua Umum",
+            "nama": "[Nama Ketua]",
+            "identitas": "",
+            "jabatan_bawah": "",
+        },
     ],
+    # Baris TTD tambahan full-width (mis. Menyetujui)
+    "ttd_extra": [],
     "mengetahui": {
         "aktif": True,
         "label": "Dosen Pendamping,",
+        "jabatan": "",
         "nama": "[Nama Dosen]",
         "nip": "[NIDN/NIP]",
+    },
+    "tembusan": [],
+    "footer": {
+        "aktif": False,
+        "motto": "",
+        "kontak": "",
     },
 }
 

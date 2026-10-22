@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -253,7 +257,16 @@ private fun SuratFormBody(
         // --- Isi ---
         item {
             SectionCard("Isi surat") {
-                FormTextField("Pembuka", form.get("pembuka")?.asString ?: "") {
+                FormTextField(
+                    "Salam pembuka (opsional, mis. Assalamu'alaikum...)",
+                    form.get("salam_buka")?.asString ?: "",
+                    singleLine = false,
+                ) {
+                    form.addProperty("salam_buka", it)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(8.dp))
+                FormTextField("Pembuka formal", form.get("pembuka")?.asString ?: "Dengan hormat,") {
                     form.addProperty("pembuka", it)
                     onFormChange(form.deepCopy())
                 }
@@ -342,6 +355,15 @@ private fun SuratFormBody(
                     itemLabel = "Paragraf",
                 )
                 Spacer(Modifier.height(8.dp))
+                FormTextField(
+                    "Salam penutup (opsional, mis. Wassalamu'alaikum...)",
+                    form.get("salam_tutup")?.asString ?: "",
+                    singleLine = false,
+                ) {
+                    form.addProperty("salam_tutup", it)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(8.dp))
                 FormTextField("Hormat penutup", form.get("penutup_hormat")?.asString ?: "Hormat kami,") {
                     form.addProperty("penutup_hormat", it)
                     onFormChange(form.deepCopy())
@@ -351,46 +373,106 @@ private fun SuratFormBody(
 
         // --- TTD: form surat menyimpan "ttd" sebagai ARRAY [{jabatan, nama}] ---
         item {
-            SectionCard("Tanda tangan") {
-                val signers = run {
-                    val el = form.get("ttd")
-                    val src: List<JsonObject> = when {
-                        el != null && el.isJsonArray ->
-                            el.asJsonArray.mapNotNull { e -> e.takeIf { it.isJsonObject }?.asJsonObject }
-                        el != null && el.isJsonObject -> listOf(el.asJsonObject)
-                        else -> emptyList()
-                    }
-                    src.map { o -> str(o, "jabatan") to str(o, "nama") }
-                }
-                KvListEditor(
-                    label = "Penandatangan",
-                    rows = signers,
-                    onChange = { pairs ->
-                        val old = form.get("ttd")?.takeIf { it.isJsonArray }?.asJsonArray
-                        val arr = JsonArray()
-                        pairs.forEachIndexed { i, (jab, nama) ->
-                            val o = if (old != null && i < old.size() && old[i].isJsonObject) {
-                                old[i].asJsonObject.deepCopy()
-                            } else {
-                                JsonObject()
-                            }
-                            o.addProperty("jabatan", jab)
-                            o.addProperty("nama", nama)
-                            arr.add(o)
-                        }
-                        form.add("ttd", arr)
-                        onFormChange(form.deepCopy())
-                    },
-                    keyLabel = "Jabatan",
-                    valueLabel = "Nama",
-                    addLabel = "Tambah penandatangan",
+            SectionCard("Tanda tangan (baris utama)") {
+                Text(
+                    "Tiap penandatangan = satu kolom. Isi Label (opsional), Jabatan, Nama, Identitas (NIP/NIDN/NRA), Jabatan bawah.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(Modifier.height(8.dp))
+                val ttdArr = form.getAsJsonArray("ttd") ?: JsonArray().also { form.add("ttd", it) }
+                val indices = (0 until ttdArr.size()).toList()
+                indices.forEach { index ->
+                    val o = ttdArr[index].asJsonObject
+                    Column(Modifier.fillMaxWidth()) {
+                        Text("Kolom ${index + 1}", style = MaterialTheme.typography.labelLarge)
+                        Spacer(Modifier.height(4.dp))
+                        FormTextField("Label (mis. Mengetahui,)", str(o, "label")) {
+                            o.addProperty("label", it); onFormChange(form.deepCopy())
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        FormTextField("Jabatan", str(o, "jabatan")) {
+                            o.addProperty("jabatan", it); onFormChange(form.deepCopy())
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        FormTextField("Nama", str(o, "nama")) {
+                            o.addProperty("nama", it); onFormChange(form.deepCopy())
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        FormTextField("Identitas (NIP/NIDN/NRA)", str(o, "identitas")) {
+                            o.addProperty("identitas", it); onFormChange(form.deepCopy())
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        FormTextField("Jabatan bawah (mis. Ketua Umum)", str(o, "jabatan_bawah")) {
+                            o.addProperty("jabatan_bawah", it); onFormChange(form.deepCopy())
+                        }
+                        TextButton(onClick = {
+                            ttdArr.remove(index)
+                            onFormChange(form.deepCopy())
+                        }) { Text("Hapus kolom ${index + 1}") }
+                        Spacer(Modifier.height(10.dp))
+                    }
+                }
+                TextButton(onClick = {
+                    val o = JsonObject()
+                    o.addProperty("label", "")
+                    o.addProperty("jabatan", "")
+                    o.addProperty("nama", "")
+                    o.addProperty("identitas", "")
+                    o.addProperty("jabatan_bawah", "")
+                    ttdArr.add(o)
+                    onFormChange(form.deepCopy())
+                }) { Text("Tambah kolom TTD") }
+            }
+        }
+
+        item {
+            SectionCard("TTD tambahan (full lebar)") {
+                Text(
+                    "Untuk blok seperti \"Menyetujui\" di bawah baris utama.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                val extra = form.getAsJsonArray("ttd_extra") ?: JsonArray().also { form.add("ttd_extra", it) }
+                (0 until extra.size()).forEach { index ->
+                    val o = extra[index].asJsonObject
+                    FormTextField("Label", str(o, "label")) {
+                        o.addProperty("label", it); onFormChange(form.deepCopy())
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    FormTextField("Jabatan", str(o, "jabatan")) {
+                        o.addProperty("jabatan", it); onFormChange(form.deepCopy())
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    FormTextField("Nama", str(o, "nama")) {
+                        o.addProperty("nama", it); onFormChange(form.deepCopy())
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    FormTextField("Identitas", str(o, "identitas")) {
+                        o.addProperty("identitas", it); onFormChange(form.deepCopy())
+                    }
+                    TextButton(onClick = {
+                        extra.remove(index)
+                        onFormChange(form.deepCopy())
+                    }) { Text("Hapus blok") }
+                    Spacer(Modifier.height(10.dp))
+                }
+                TextButton(onClick = {
+                    val o = JsonObject()
+                    o.addProperty("label", "Menyetujui,")
+                    o.addProperty("jabatan", "")
+                    o.addProperty("nama", "")
+                    o.addProperty("identitas", "")
+                    extra.add(o)
+                    onFormChange(form.deepCopy())
+                }) { Text("Tambah blok TTD tambahan") }
             }
         }
 
         // --- Mengetahui ---
         item {
-            SectionCard("Mengetahui (opsional)") {
+            SectionCard("Mengetahui (opsional, format lama)") {
                 val m = obj("mengetahui")
                 FormSwitch(
                     label = "Tampilkan blok mengetahui",
@@ -410,6 +492,48 @@ private fun SuratFormBody(
                 FormTextField("Nama", str(m, "nama")) { setStr(m, "nama", it) }
                 Spacer(Modifier.height(8.dp))
                 FormTextField("NIP", str(m, "nip")) { setStr(m, "nip", it) }
+            }
+        }
+
+        item {
+            SectionCard("Tembusan") {
+                val items = run {
+                    val arr = form.getAsJsonArray("tembusan") ?: JsonArray()
+                    arr.map { it.asString }
+                }
+                StringListEditor(
+                    label = "Daftar tembusan",
+                    items = items,
+                    onChange = { list ->
+                        val arr = JsonArray()
+                        list.forEach { arr.add(it) }
+                        form.add("tembusan", arr)
+                        onFormChange(form.deepCopy())
+                    },
+                    itemLabel = "Tembusan",
+                )
+            }
+        }
+
+        item {
+            SectionCard("Footer") {
+                val foot = obj("footer")
+                FormSwitch(
+                    label = "Tampilkan footer",
+                    checked = foot.get("aktif")?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false,
+                    onCheckedChange = {
+                        foot.addProperty("aktif", it)
+                        onFormChange(form.deepCopy())
+                    },
+                )
+                Spacer(Modifier.height(8.dp))
+                FormTextField("Motto", str(foot, "motto"), singleLine = false) {
+                    setStr(foot, "motto", it)
+                }
+                Spacer(Modifier.height(8.dp))
+                FormTextField("Kontak / sosmed", str(foot, "kontak"), singleLine = false) {
+                    setStr(foot, "kontak", it)
+                }
             }
         }
 

@@ -1,0 +1,100 @@
+{
+  "kind": "surat-resmi",
+  "version": 1,
+  "meta": {
+    "title": "Permohonan Izin Kunjungan Edukatif",
+    "author": "UKM Seni Zaorah Sapan Matappa"
+  },
+  "page": {
+    "size": "A4",
+    "margin_top_cm": 2.0,
+    "margin_bottom_cm": 2.0,
+    "margin_left_cm": 2.5,
+    "margin_right_cm": 2.5
+  },
+  "kop": {
+    "lines": [
+      "UKM SENI ZAORAH SAPAN MATAPPA",
+      "Sekolah Tinggi Keguruan dan Ilmu Pendidikan (STKIP) Andi Matappa"
+    ],
+    "alamat": "Sekretariat: [Alamat Lengkap Sekretariat, Kota, Kode Pos]",
+    "kontak": "Email: [email@zsm.ac.id] | IG: @zsm.stkip | Telp: 08xx-xxxx-xxxx",
+    "logo": null,
+    "logo_kanan": null,
+    "logo_lebar_cm": 2.2,
+    "logo_mode": "auto",
+    "garis": "bottom",
+    "garis_tebal_pt": 1.5,
+    "garis_warna": "000000"
+  },
+  "identitas": {
+    "nomor": "010/B/ZAORAH SAPAN MATAPPA/X/2026",
+    "lampiran": "1 (satu) berkas",
+    "perihal": "Permohonan Izin Kunjungan Edukatif",
+    "perihal_bold": true,
+    "kota_tanggal": "Pangkep, 21 Oktober 2026"
+  },
+  "penerima": {
+    "yth": "Pimpinan Museum .......................................",
+    "baris_tambahan": [],
+    "di": "Tempat"
+  },
+  "salam_buka": "Assalamu'alaikum Warahmatullahi Wabarakatuh.",
+  "pembuka": "Dengan hormat,",
+  "paragraf": [
+    "Sehubungan dengan pelaksanaan program kerja UKM Seni Zaorah Sapan Matappa periode 2026/2027, kami bermaksud mengadakan kegiatan kunjungan edukatif ke Museum ....................................... sebagai bagian dari upaya pelestarian dan pengembangan seni budaya bagi seluruh anggota.",
+    "Kegiatan ini akan didampingi langsung oleh Dosen Pendamping, yaitu Bapak/Ibu ......................................., guna memastikan kelancaran dan ketertiban pelaksanaan kegiatan. Adapun Dosen Pembina UKM Seni Zaorah Sapan Matappa, Bapak/Ibu ......................................., turut mengetahui dan menyetujui pelaksanaan kegiatan ini.",
+    "Untuk itu, kami memohon kesediaan Bapak/Ibu untuk memberikan izin serta fasilitas pendampingan selama kegiatan berlangsung. Sebagai bahan pertimbangan, kami lampirkan Surat Penugasan beserta daftar peserta kegiatan.",
+    "Demikian surat permohonan ini kami sampaikan. Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih."
+  ],
+  "tampilkan_rincian": true,
+  "rincian_intro": "Adapun kegiatan tersebut akan dilaksanakan pada:",
+  "rincian": [
+    {"label": "Hari/Tanggal", "nilai": "......................................."},
+    {"label": "Waktu", "nilai": "......................................."},
+    {"label": "Tempat", "nilai": "......................................."},
+    {"label": "Jumlah Peserta", "nilai": "....... orang anggota + ....... orang pendamping (dosen)"}
+  ],
+  "penutup": [],
+  "salam_tutup": "Wassalamu'alaikum Warahmatullahi Wabarakatuh.",
+  "penutup_hormat": "Hormat kami,",
+  "organisasi_bawah": ["UKM SENI ZAORAH SAPAN MATAPPA"],
+  "ttd": [
+    {
+      "label": "Mengetahui,",
+      "jabatan": "Dosen Pembina UKM ZSM",
+      "nama": ".......................................",
+      "identitas": "NIDN: .................................",
+      "jabatan_bawah": ""
+    },
+    {
+      "label": "Hormat kami,",
+      "jabatan": "UKM SENI ZAORAH SAPAN MATAPPA",
+      "nama": ".......................................",
+      "identitas": "NRA: ..................................",
+      "jabatan_bawah": "Ketua Umum"
+    }
+  ],
+  "ttd_extra": [
+    {
+      "label": "Menyetujui,",
+      "jabatan": "Wakil Ketua III Bidang Kemahasiswaan\nSTKIP Andi Matappa",
+      "nama": ".......................................",
+      "identitas": "NIDN/NIP: ............................."
+    }
+  ],
+  "mengetahui": { "aktif": false, "label": "Mengetahui,", "jabatan": "", "nama": "", "nip": "" },
+  "tembusan": [
+    "Ketua STKIP Andi Matappa",
+    "Wakil Ketua III Bidang Kemahasiswaan",
+    "Dosen Pembina UKM Seni Zaorah Sapan Matappa",
+    "Dosen Pendamping Kegiatan",
+    "Dewan Pendamping",
+    "Arsip"
+  ],
+  "footer": {
+    "aktif": true,
+    "motto": "Bergerak dengan hati, Berkarya penuh cinta",
+    "kontak": "Instagram: @zsm.stkip | Tiktok: @zsm.stkip | YouTube: UKM ZSM"
+  }
+}

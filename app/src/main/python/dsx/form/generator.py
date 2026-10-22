@@ -199,6 +199,11 @@ def _gen_surat(d: dict[str, Any]) -> str:
         'P("di", space_after=0)',
         f'P({dsx_str(penerima.get("di") or "Tempat")}, space_after=10)',
         "",
+        *(
+            [f'P({dsx_str(d.get("salam_buka"))}, space_after=8)']
+            if str(d.get("salam_buka") or "").strip()
+            else []
+        ),
         f'P({dsx_str(d.get("pembuka") or "Dengan hormat,")}, space_after=8)',
         "",
     ]
@@ -241,6 +246,11 @@ def _gen_surat(d: dict[str, Any]) -> str:
             f'P({dsx_str(str(p))}, first_line_indent=1.0cm, space_after=6)'
         )
 
+    if str(d.get("salam_tutup") or "").strip():
+        lines.append(
+            f'P({dsx_str(d.get("salam_tutup"))}, space_after=8)'
+        )
+
     lines += [
         "",
         f'P({dsx_str(d.get("penutup_hormat") or "Hormat kami,")}, space_after=2)',
@@ -251,39 +261,119 @@ def _gen_surat(d: dict[str, Any]) -> str:
     lines.append("")
     lines.append("# === TTD ===")
 
-    ttd_list = d.get("ttd") or []
-    if ttd_list:
+    def _ttd_table(ttd_list: list) -> list[str]:
+        if not ttd_list:
+            return []
         n = len(ttd_list)
         widths = ", ".join(['"*"'] * n)
+        has_label = any(str(t.get("label") or "").strip() for t in ttd_list)
+        has_id = any(str(t.get("identitas") or "").strip() for t in ttd_list)
+        has_jb = any(str(t.get("jabatan_bawah") or "").strip() for t in ttd_list)
+        rows: list[str] = []
+        if has_label:
+            lab = ", ".join(
+                f'CELL({dsx_str(str(t.get("label") or ""))}, align="center")' for t in ttd_list
+            )
+            rows.append(f"    [{lab}],")
         jab = ", ".join(
             f'CELL({dsx_str(str(t.get("jabatan") or ""))}, align="center")' for t in ttd_list
         )
+        rows.append(f"    [{jab}],")
         spasi = ", ".join(['CELL("\\n\\n\\n\\n", align="center")'] * n)
+        rows.append(f"    [{spasi}],")
         nama = ", ".join(
             f'CELL([BOLD({dsx_str(str(t.get("nama") or ""))})], align="center")' for t in ttd_list
         )
-        lines += [
+        rows.append(f"    [{nama}]," if (has_id or has_jb) else f"    [{nama}]")
+        if has_id:
+            ids = ", ".join(
+                f'CELL({dsx_str(str(t.get("identitas") or ""))}, align="center")' for t in ttd_list
+            )
+            rows.append(f"    [{ids}]," if has_jb else f"    [{ids}]")
+        if has_jb:
+            jb = ", ".join(
+                f'CELL({dsx_str(str(t.get("jabatan_bawah") or ""))}, align="center")' for t in ttd_list
+            )
+            rows.append(f"    [{jb}]")
+        return [
             "TABLE(",
             '  border="none",',
             "  cell_padding=0.05cm,",
             f"  widths=[{widths}],",
             "  rows=[",
-            f"    [{jab}],",
-            f"    [{spasi}],",
-            f"    [{nama}]",
+            *rows,
             "  ]",
             ")",
         ]
 
+    ttd_list = d.get("ttd") or []
+    if ttd_list:
+        lines += _ttd_table(ttd_list)
+
+    # Full-width extra signature blocks (e.g. Menyetujui)
+    for extra in d.get("ttd_extra") or []:
+        if not isinstance(extra, dict):
+            continue
+        chunk: list[str] = [""]
+        if str(extra.get("label") or "").strip():
+            chunk.append(
+                f'P({dsx_str(str(extra.get("label")))}, align="center", space_before=12, space_after=0)'
+            )
+        if str(extra.get("jabatan") or "").strip():
+            chunk.append(
+                f'P({dsx_str(str(extra.get("jabatan")))}, align="center", space_after=0)'
+            )
+        chunk.append('P("\\n\\n\\n\\n", align="center", space_after=0)')
+        chunk.append(
+            f'P([BOLD({dsx_str(str(extra.get("nama") or ""))})], align="center", space_after=0)'
+        )
+        if str(extra.get("identitas") or "").strip():
+            chunk.append(
+                f'P({dsx_str(str(extra.get("identitas")))}, align="center", space_after=0)'
+            )
+        if str(extra.get("jabatan_bawah") or "").strip():
+            chunk.append(
+                f'P({dsx_str(str(extra.get("jabatan_bawah")))}, align="center", space_after=0)'
+            )
+        lines += chunk
+
     if mengetahui.get("aktif"):
         lines += [
             "",
-            'P("", space_after=10)',
+            'P(" ", space_after=10)',
             f'P({dsx_str(mengetahui.get("label") or "Mengetahui,")}, space_after=0)',
+        ]
+        if str(mengetahui.get("jabatan") or "").strip():
+            lines.append(f'P({dsx_str(str(mengetahui.get("jabatan")))}, space_after=0)')
+        lines += [
             'P("\\n\\n\\n", space_after=0)',
             f'P([BOLD({dsx_str(str(mengetahui.get("nama") or ""))})], space_after=0)',
             f'P({dsx_str(str(mengetahui.get("nip") or ""))}, space_after=0)',
         ]
+
+    # Tembusan
+    tembusan = d.get("tembusan") or []
+    if tembusan:
+        lines += ["", 'P("Tembusan:", space_before=12, space_after=2)']
+        for i, item in enumerate(tembusan, 1):
+            text = str(item).strip()
+            if text:
+                lines.append(f'P({dsx_str(f"{i}. {text}")}, space_after=0)')
+
+    # Footer
+    footer = d.get("footer") or {}
+    if footer.get("aktif"):
+        motto = str(footer.get("motto") or "").strip()
+        kontak = str(footer.get("kontak") or "").strip()
+        lines += [
+            "",
+            'HR(style="solid", thickness=1.0, color="000000", space_before=10, space_after=6)',
+        ]
+        if motto:
+            lines.append(f'P([ITALIC({dsx_str(motto)})], align="center", space_after=2)')
+        if kontak:
+            lines.append(f'P({dsx_str(kontak)}, align="center", space_after=4)')
+        lines.append('HR(style="solid", thickness=1.0, color="000000", space_before=2, space_after=0)')
 
     lines.append("")
     return "\n".join(lines) + "\n"
