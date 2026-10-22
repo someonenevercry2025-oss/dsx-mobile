@@ -29,15 +29,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Set up Python (Chaquopy build python)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Accept Android licenses
-        run: yes | sdkmanager --licenses >/dev/null || true
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
 
       - name: Install SDK packages
         run: |
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9517233" "cmake;3.22.1"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Generate Gradle Wrapper if missing
         run: |
@@ -106,15 +108,16 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        if: steps.secrets.outputs.available == 'true'
-        uses: android-actions/setup-android@v3
+      - name: Set up Python (Chaquopy build python)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: SDK packages
         if: steps.secrets.outputs.available == 'true'
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9517233" "cmake;3.22.1"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Gradle Wrapper
         if: steps.secrets.outputs.available == 'true'

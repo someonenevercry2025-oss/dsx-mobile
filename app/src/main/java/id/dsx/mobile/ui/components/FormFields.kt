@@ -61,12 +61,12 @@ fun SectionCard(
 fun FormTextField(
     label: String,
     value: String,
-    onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     minLines: Int = 1,
     maxLines: Int = if (singleLine) 1 else 8,
     keyboardType: KeyboardType = KeyboardType.Text,
+    onValueChange: (String) -> Unit,
 ) {
     OutlinedTextField(
         value = value,
@@ -165,10 +165,10 @@ fun StringListEditor(
 fun KvListEditor(
     label: String,
     rows: List<Pair<String, String>>,
-    onChange: (List<Pair<String, String>>) -> Unit,
     keyLabel: String = "Label",
     valueLabel: String = "Nilai",
     addLabel: String = "Tambah baris",
+    onChange: (List<Pair<String, String>>) -> Unit,
 ) {
     Column(Modifier.fillMaxWidth()) {
         Text(label, style = MaterialTheme.typography.labelLarge)

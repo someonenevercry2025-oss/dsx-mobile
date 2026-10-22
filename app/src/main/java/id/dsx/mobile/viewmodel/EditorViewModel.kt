@@ -8,7 +8,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import id.dsx.mobile.bridge.PythonBridge
 import id.dsx.mobile.data.ProjectMeta
-import id.dsx.mobile.data.PdfHelper
 import id.dsx.mobile.data.PresetRepository
 import id.dsx.mobile.data.ProjectRepository
 import kotlinx.coroutines.Job
@@ -241,8 +240,11 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         val form = _state.value.form?.deepCopy() ?: return
         val blocks = form.getAsJsonArray("blocks") ?: return
         if (from !in 0 until blocks.size() || to !in 0 until blocks.size()) return
-        val el = blocks.remove(from)
-        blocks.add(to, el)
+        val list = blocks.toMutableList()
+        list.add(to, list.removeAt(from))
+        val reordered = JsonArray()
+        list.forEach { reordered.add(it) }
+        form.add("blocks", reordered)
         updateForm(form)
     }
 
@@ -357,7 +359,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
      * PDF sederhana: build HTML lalu cetak lewat sistem (PrintManager).
      * Bukan setara LibreOffice — label jelas di UI.
      */
-    fun exportPdfSimple(useSystemDialog: Boolean = true) {
+    fun exportPdfSimple(@Suppress("UNUSED_PARAMETER") useSystemDialog: Boolean = true) {
         viewModelScope.launch {
             _state.value = _state.value.copy(
                 isBusy = true,
@@ -398,46 +400,13 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 )
                 return@launch
             }
-            val htmlFile = File(htmlPath)
             _state.value = _state.value.copy(isBusy = false, statusMessage = null)
 
-            if (useSystemDialog) {
-                // Print dialog on main thread context — flag for UI
-                _state.value = _state.value.copy(
-                    previewHtmlPath = htmlPath,
-                    statusMessage = "PDF_PRINT:" + htmlPath,
-                )
-            } else {
-                val out = File(dir, "output/document-sederhana.pdf")
-                out.parentFile?.mkdirs()
-                val result = PdfHelper.renderHtmlToPdf(
-                    getApplication(),
-                    htmlFile,
-                    out,
-                    jobName = _state.value.meta?.name ?: "DSX",
-                )
-                result.fold(
-                    onSuccess = { f ->
-                        _state.value = _state.value.copy(
-                            buildResult = BuildResult(
-                                path = f.absolutePath,
-                                size = f.length(),
-                                format = "pdf-sederhana",
-                                warnings = listOf(
-                                    "PDF sederhana dari HTML, bukan setara LibreOffice/Word.",
-                                ),
-                            ),
-                        )
-                    },
-                    onFailure = { e ->
-                        _state.value = _state.value.copy(
-                            error = e.message,
-                            // fallback: still offer system print via status
-                            statusMessage = "PDF_PRINT:" + htmlPath,
-                        )
-                    },
-                )
-            }
+            // Dialog cetak sistem dipicu dari UI (butuh Activity context)
+            _state.value = _state.value.copy(
+                previewHtmlPath = htmlPath,
+                statusMessage = "PDF_PRINT:" + htmlPath,
+            )
         }
     }
 

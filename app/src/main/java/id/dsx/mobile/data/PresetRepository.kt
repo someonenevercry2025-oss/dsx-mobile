@@ -19,11 +19,9 @@ data class PresetInfo(
 )
 
 /**
- * App-level user presets live in filesDir/presets/ (blueprint §7).
- * Engine user_presets API expects a "project_dir"; we pass presetsRoot
- * so presets/ lands at filesDir/presets/presets/ — instead we use the
- * parent and store JSON files directly via the same API with presetsRoot
- * pointing at filesDir (so engine writes filesDir/presets/*.json).
+ * Preset pengguna disimpan engine di <filesDir>/presets/<nama>.json.
+ * Engine menerima "project_dir" dan menulis ke subfolder presets/,
+ * jadi yang dikirim adalah filesDir itu sendiri.
  */
 class PresetRepository(private val context: Context) {
 
