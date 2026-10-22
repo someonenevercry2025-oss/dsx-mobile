@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Document body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,24h36c2.2,0 4,1.8 4,4v52c0,2.2 -1.8,4 -4,4H30c-2.2,0 -4,-1.8 -4,-4V28c0,-2.2 1.8,-4 4,-4z" />
+    <!-- Text lines -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M36,38h28v3.5H36zM36,48h24v3.5H36zM36,58h26v3.5H36zM36,68h18v3.5H36z" />
+    <!-- Accent chevron -->
+    <path
+        android:fillColor="#90CAF9"
+        android:pathData="M72,62 L88,72 L72,82 Z" />
+</vector>

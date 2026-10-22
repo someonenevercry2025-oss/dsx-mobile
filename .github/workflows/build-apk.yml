@@ -1,0 +1,167 @@
+# DSX Mobile — build APK on GitHub Actions
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Assemble Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Install SDK packages
+        run: |
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9517233" "cmake;3.22.1"
+
+      - name: Generate Gradle Wrapper if missing
+        run: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            GRADLE_VER=8.2
+            curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VER}-bin.zip" -o /tmp/gradle.zip
+            unzip -q /tmp/gradle.zip -d /tmp
+            /tmp/gradle-${GRADLE_VER}/bin/gradle wrapper --gradle-version ${GRADLE_VER}
+          fi
+          chmod +x gradlew
+          test -f gradle/wrapper/gradle-wrapper.properties
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build debug APK
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+        run: ./gradlew :app:assembleDebug --stacktrace --no-daemon
+
+      - name: Locate APK
+        id: apk
+        run: |
+          APK=$(find app/build/outputs/apk -name "*.apk" | head -n1)
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsx-mobile-debug-${{ github.sha }}
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Signed Release (tag only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check signing secrets
+        id: secrets
+        run: |
+          if [ -n "${{ secrets.DSX_KEYSTORE_BASE64 }}" ] && \
+             [ -n "${{ secrets.DSX_STORE_PASSWORD }}" ] && \
+             [ -n "${{ secrets.DSX_KEY_PASSWORD }}" ] && \
+             [ -n "${{ secrets.DSX_KEY_ALIAS }}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Set secrets DSX_KEYSTORE_BASE64, DSX_STORE_PASSWORD, DSX_KEY_PASSWORD, DSX_KEY_ALIAS for signed release"
+          fi
+
+      - name: Set up JDK 17
+        if: steps.secrets.outputs.available == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        if: steps.secrets.outputs.available == 'true'
+        uses: android-actions/setup-android@v3
+
+      - name: SDK packages
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9517233" "cmake;3.22.1"
+
+      - name: Gradle Wrapper
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            GRADLE_VER=8.2
+            curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VER}-bin.zip" -o /tmp/gradle.zip
+            unzip -q /tmp/gradle.zip -d /tmp
+            /tmp/gradle-${GRADLE_VER}/bin/gradle wrapper --gradle-version ${GRADLE_VER}
+          fi
+          chmod +x gradlew
+
+      - name: Decode keystore
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          mkdir -p keystore
+          echo "${{ secrets.DSX_KEYSTORE_BASE64 }}" | base64 -d > keystore/dsx-release.jks
+
+      - name: Setup Gradle
+        if: steps.secrets.outputs.available == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK + AAB
+        if: steps.secrets.outputs.available == 'true'
+        env:
+          DSX_STORE_FILE: ${{ github.workspace }}/keystore/dsx-release.jks
+          DSX_STORE_PASSWORD: ${{ secrets.DSX_STORE_PASSWORD }}
+          DSX_KEY_ALIAS: ${{ secrets.DSX_KEY_ALIAS }}
+          DSX_KEY_PASSWORD: ${{ secrets.DSX_KEY_PASSWORD }}
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+        run: |
+          ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace --no-daemon
+
+      - name: Upload release APK
+        if: steps.secrets.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsx-mobile-release-${{ github.ref_name }}
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload release AAB
+        if: steps.secrets.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsx-mobile-aab-${{ github.ref_name }}
+          path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: warn
+          retention-days: 90

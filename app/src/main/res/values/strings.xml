@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DSX Mobile</string>
+    <string name="home_title">Proyek</string>
+    <string name="new_project">Baru</string>
+    <string name="preview">Pratinjau</string>
+    <string name="build">Bangun</string>
+    <string name="share">Bagikan</string>
+    <string name="save">Simpan</string>
+    <string name="add_block">Tambah blok</string>
+    <string name="preview_banner">Pratinjau perkiraan, hasil Word bisa sedikit berbeda</string>
+    <string name="empty_custom">Form kustom kosong. Ketuk \"Tambah blok\" untuk mulai.</string>
+    <string name="python_init">Menyiapkan mesin dokumen…</string>
+    <string name="pdf_simple_label">PDF sederhana (dari HTML, bukan LibreOffice)</string>
+    <string name="about_title">Tentang &amp; bantuan</string>
+</resources>
