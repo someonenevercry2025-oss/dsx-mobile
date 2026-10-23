@@ -25,6 +25,13 @@ data class BuildResult(
     val warnings: List<String>,
 )
 
+data class BuildHistoryItem(
+    val path: String,
+    val format: String,
+    val sizeBytes: Long,
+    val at: String,
+)
+
 data class EditorUiState(
     val meta: ProjectMeta? = null,
     val form: JsonObject? = null,
@@ -42,6 +49,9 @@ data class EditorUiState(
     val lastSavedAt: String? = null,
     val codePreferred: Boolean = false,
     val validationHints: List<String> = emptyList(),
+    val buildHistory: List<BuildHistoryItem> = emptyList(),
+    val formPartialMapping: Boolean = false,
+    val modeDiffNote: String? = null,
 )
 
 class EditorViewModel(app: Application) : AndroidViewModel(app) {
@@ -66,7 +76,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             form = form,
             dsxText = dsx,
             mode = meta?.mode ?: "form",
+            codePreferred = meta?.codePreferred == true,
+            buildHistory = loadBuildHistory(),
         )
+        refreshAssets()
         viewModelScope.launch {
             val cat = PythonBridge.listBlocks()
             if (cat.ok && cat.data?.isJsonArray == true) {
