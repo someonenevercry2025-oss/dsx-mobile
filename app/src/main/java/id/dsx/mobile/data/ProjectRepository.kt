@@ -21,6 +21,7 @@ data class ProjectMeta(
     val mode: String,          // form | kode
     val createdAt: String,
     val updatedAt: String,
+    val codePreferred: Boolean = false,
 )
 
 class ProjectRepository(private val context: Context) {
@@ -183,6 +184,41 @@ class ProjectRepository(private val context: Context) {
         )
         File(dir, "meta.json").writeText(gson.toJson(meta))
         Result.success(meta)
+    }
+
+    fun renameProject(id: String, name: String) {
+        val meta = loadMeta(id) ?: return
+        updateMeta(meta.copy(name = name.trim().ifEmpty { meta.name }, updatedAt = isoNow()))
+    }
+
+    fun setCodePreferred(id: String, preferred: Boolean) {
+        val meta = loadMeta(id) ?: return
+        updateMeta(meta.copy(codePreferred = preferred, updatedAt = isoNow()))
+    }
+
+    fun duplicateProject(id: String, newName: String? = null): Result<ProjectMeta> {
+        return try {
+            val src = projectDir(id)
+            if (!src.isDirectory) return Result.failure(Exception("Proyek tidak ditemukan"))
+            val newId = java.util.UUID.randomUUID().toString().take(8)
+            val dest = File(projectsRoot, newId)
+            src.copyRecursively(dest, overwrite = false)
+            val meta = loadMeta(newId)?.copy(
+                id = newId,
+                name = newName ?: ((loadMeta(id)?.name ?: "Proyek") + " (salinan)"),
+                createdAt = isoNow(),
+                updatedAt = isoNow(),
+                codePreferred = false,
+            ) ?: return Result.failure(Exception("meta hilang setelah salin"))
+            // rewrite meta with new id
+            File(dest, "meta.json").writeText(gson.toJson(meta.copy(id = newId)))
+            // ensure id in meta matches folder
+            val fixed = meta.copy(id = newId)
+            updateMeta(fixed)
+            Result.success(fixed)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     fun setMode(id: String, mode: String) {

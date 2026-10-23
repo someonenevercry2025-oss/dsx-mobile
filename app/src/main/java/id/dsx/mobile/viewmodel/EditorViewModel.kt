@@ -112,6 +112,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             val ts = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
                 .format(java.util.Date())
             _state.value = _state.value.copy(lastSavedAt = ts, codePreferred = true)
+            repo.setCodePreferred(projectId, true)
         }
     }
 
@@ -146,7 +147,15 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             when (to) {
                 "kode" -> {
-                    // Generate latest dsx from form
+                    // If code is preferred and not forced, keep existing dsx (do not overwrite)
+                    if (_state.value.codePreferred && !force) {
+                        repo.setMode(projectId, "kode")
+                        _state.value = _state.value.copy(
+                            mode = "kode",
+                            meta = repo.loadMeta(projectId),
+                        )
+                        return@launch
+                    }
                     val formJson = gson.toJson(_state.value.form)
                     val dir = repo.projectDir(projectId).absolutePath
                     val gen = PythonBridge.generateDsx(formJson, dir)
@@ -156,14 +165,19 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     val dsx = repo.loadDsx(projectId)
                     repo.setMode(projectId, "kode")
+                    clearCodePreferred()
                     _state.value = _state.value.copy(
                         mode = "kode",
                         dsxText = dsx,
                         meta = repo.loadMeta(projectId),
+                        codePreferred = false,
+                        formPartialMapping = false,
+                        modeDiffNote = "document.dsx digenerate ulang dari Form.",
                     )
                 }
                 "form" -> {
                     val text = _state.value.dsxText
+                    val beforeKind = _state.value.form?.get("kind")?.asString
                     val conv = PythonBridge.dsxToForm(text)
                     if (!conv.ok && !force) {
                         _state.value = _state.value.copy(
@@ -172,16 +186,34 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                         )
                         return@launch
                     }
+                    var partial = false
+                    var note: String? = null
                     if (conv.ok && conv.dataAsObject() != null) {
                         val form = conv.dataAsObject()!!
+                        val afterKind = form.get("kind")?.asString
+                        partial = afterKind == "custom" || (beforeKind != null && afterKind != null && beforeKind != afterKind)
+                        if (partial) {
+                            note = "Konversi ke form bersifat sebagian (kind=$afterKind). Periksa field manual."
+                        } else {
+                            note = "Form diperbarui dari kode (best-effort)."
+                        }
+                        if (conv.diagnostics.isNotEmpty() || conv.warnings.isNotEmpty()) {
+                            partial = true
+                            note = (note ?: "") + " Ada peringatan konversi."
+                        }
                         repo.saveForm(projectId, form)
                         _state.value = _state.value.copy(form = form)
+                    } else if (force) {
+                        partial = true
+                        note = "Kode tidak sepenuhnya terpetakan ke form; form lama dipertahankan."
                     }
                     repo.saveDsx(projectId, text)
                     repo.setMode(projectId, "form")
                     _state.value = _state.value.copy(
                         mode = "form",
                         meta = repo.loadMeta(projectId),
+                        formPartialMapping = partial,
+                        modeDiffNote = note,
                     )
                 }
             }
@@ -309,7 +341,9 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(isBusy = false, statusMessage = null)
 
             if (!resp.ok) {
-                val msgs = resp.diagnostics.map { "${it.code}: ${it.message}" }
+                val msgs = resp.diagnostics.map {
+                    id.dsx.mobile.ui.diagnosticHint("${it.code}: ${it.message}")
+                }
                 _state.value = _state.value.copy(
                     error = resp.firstErrorMessage(),
                     diagnostics = msgs,
@@ -324,7 +358,19 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(
                 buildResult = BuildResult(path, size, fmt, warnings),
                 diagnostics = emptyList(),
+                buildHistory = (
+                    listOf(
+                        BuildHistoryItem(
+                            path = path,
+                            format = fmt,
+                            sizeBytes = size,
+                            at = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                                .format(java.util.Date()),
+                        )
+                    ) + _state.value.buildHistory
+                ).take(3),
             )
+            persistBuildHistory()
         }
     }
 
@@ -479,7 +525,45 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearCodePreferred() {
         _state.value = _state.value.copy(codePreferred = false)
-        // when regenerating from form
+        repo.setCodePreferred(projectId, false)
+    }
+
+    
+    private fun historyFile(): java.io.File =
+        java.io.File(repo.projectDir(projectId), "build_history.json")
+
+    private fun loadBuildHistory(): List<BuildHistoryItem> {
+        val f = historyFile()
+        if (!f.exists()) return emptyList()
+        return try {
+            val arr = com.google.gson.JsonParser.parseString(f.readText()).asJsonArray
+            arr.mapNotNull { el ->
+                val o = el.asJsonObject
+                BuildHistoryItem(
+                    path = o.get("path")?.asString ?: return@mapNotNull null,
+                    format = o.get("format")?.asString ?: "docx",
+                    sizeBytes = o.get("sizeBytes")?.asLong ?: 0L,
+                    at = o.get("at")?.asString ?: "",
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun persistBuildHistory() {
+        try {
+            val arr = com.google.gson.JsonArray()
+            _state.value.buildHistory.forEach { h ->
+                val o = com.google.gson.JsonObject()
+                o.addProperty("path", h.path)
+                o.addProperty("format", h.format)
+                o.addProperty("sizeBytes", h.sizeBytes)
+                o.addProperty("at", h.at)
+                arr.add(o)
+            }
+            historyFile().writeText(arr.toString())
+        } catch (_: Exception) { }
     }
 
     fun clearStatus() {

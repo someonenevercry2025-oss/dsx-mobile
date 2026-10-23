@@ -124,6 +124,7 @@ def generate_project(
 def _gen_surat(d: dict[str, Any]) -> str:
     meta = d.get("meta") or {}
     page = d.get("page") or {}
+    style = d.get("style") or {}
     kop = d.get("kop") or {}
     ident = d.get("identitas") or {}
     penerima = d.get("penerima") or {}
@@ -134,6 +135,13 @@ def _gen_surat(d: dict[str, Any]) -> str:
     ml = float(page.get("margin_left_cm", 2.5))
     mr = float(page.get("margin_right_cm", 2.5))
     size = page.get("size") or "A4"
+    font = str(style.get("font") or "Times New Roman")
+    fsize = float(style.get("size") or 12)
+    line = float(style.get("line") or 1.15)
+    para_sp = float(style.get("paragraph_space_after_pt") or 6)
+    indent = float(style.get("first_line_indent_cm") or 1.0)
+    ttd_lines = max(2, min(8, int(style.get("ttd_space_lines") or 4)))
+    ttd_spacer = "\n" * ttd_lines
 
     lines: list[str] = [
         'DSX(version="2.6")',
@@ -148,6 +156,7 @@ def _gen_surat(d: dict[str, Any]) -> str:
         f"  margin_left={ml}cm,",
         f"  margin_right={mr}cm",
         ")",
+        f"STYLEDEF(normal, font={dsx_str(font)}, size={fsize}, line={line})",
         "",
         "# === KOP (generated from form) ===",
     ]
@@ -210,13 +219,13 @@ def _gen_surat(d: dict[str, Any]) -> str:
 
     for p in d.get("paragraf") or []:
         lines.append(
-            f'P({dsx_str(str(p))}, first_line_indent=1.0cm, space_after=6)'
+            f'P({dsx_str(str(p))}, first_line_indent={indent}cm, space_after={para_sp})'
         )
 
     if d.get("tampilkan_rincian"):
         intro = d.get("rincian_intro") or ""
         if intro:
-            lines.append(f'P({dsx_str(str(intro))}, first_line_indent=1.0cm, space_after=6)')
+            lines.append(f'P({dsx_str(str(intro))}, first_line_indent={indent}cm, space_after={para_sp})')
         lines.append("")
         lines.append("# === RINCIAN ===")
         rows_src: list[str] = []
@@ -243,7 +252,7 @@ def _gen_surat(d: dict[str, Any]) -> str:
 
     for p in d.get("penutup") or []:
         lines.append(
-            f'P({dsx_str(str(p))}, first_line_indent=1.0cm, space_after=6)'
+            f'P({dsx_str(str(p))}, first_line_indent={indent}cm, space_after={para_sp})'
         )
 
     if str(d.get("salam_tutup") or "").strip():
@@ -279,8 +288,19 @@ def _gen_surat(d: dict[str, Any]) -> str:
             f'CELL({dsx_str(str(t.get("jabatan") or ""))}, align="center")' for t in ttd_list
         )
         rows.append(f"    [{jab}],")
-        spasi = ", ".join(['CELL("\\n\\n\\n\\n", align="center")'] * n)
+        spasi = ", ".join([f'CELL({dsx_str(ttd_spacer)}, align="center")'] * n)
         rows.append(f"    [{spasi}],")
+        has_img = any(str(t.get("gambar") or "").strip() for t in ttd_list)
+        if has_img:
+            imgs = ", ".join(
+                (
+                    f'CELL([IMAGE({dsx_str(str(t.get("gambar")))})], align="center")'
+                    if str(t.get("gambar") or "").strip()
+                    else 'CELL(" ", align="center")'
+                )
+                for t in ttd_list
+            )
+            rows.append(f"    [{imgs}],")
         nama = ", ".join(
             f'CELL([BOLD({dsx_str(str(t.get("nama") or ""))})], align="center")' for t in ttd_list
         )
@@ -323,7 +343,7 @@ def _gen_surat(d: dict[str, Any]) -> str:
             chunk.append(
                 f'P({dsx_str(str(extra.get("jabatan")))}, align="center", space_after=0)'
             )
-        chunk.append('P("\\n\\n\\n\\n", align="center", space_after=0)')
+        chunk.append(f'P({dsx_str(ttd_spacer)}, align="center", space_after=0)')
         chunk.append(
             f'P([BOLD({dsx_str(str(extra.get("nama") or ""))})], align="center", space_after=0)'
         )

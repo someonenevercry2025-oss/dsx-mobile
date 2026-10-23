@@ -1,3 +1,28 @@
+## 1.5.0
+
+- Tooltip ? per section Form
+- Highlight banner baris diagnostik
+- Badge form terpetakan sebagian + catatan diff mode
+- Gambar paraf/stempel di kolom TTD
+- Kompres gambar max px + kualitas JPEG di Properti
+
+## 1.4.2
+
+- Template Surat Tugas & Surat Pernyataan
+- Rename proyek
+- Bagikan ulang dari riwayat build
+- Tip diagnostik pada error Build
+- docs/ARSITEKTUR.md
+- Bantuan ringkas di editor (?)
+
+## 1.4.1
+
+- Highlight baris diagnostik (seleksi penuh)
+- Saran tip pada kode error DSX
+- Riwayat 3 build terakhir per proyek
+- Pratinjau: placeholder [..] / .... kuning
+- Gradle Wrapper di-commit (jar + gradlew)
+
 # Catatan rilis & build produksi
 
 ## Versi

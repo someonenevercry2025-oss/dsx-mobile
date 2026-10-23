@@ -56,6 +56,7 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onOpenProject: (String) -> Unit,
     onAbout: () -> Unit = {},
+    onHelp: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
     var showNewDialog by remember { mutableStateOf(false) }
@@ -89,6 +90,9 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("DSX Mobile") },
                 actions = {
+                    IconButton(onClick = onHelp) {
+                        Text("?", style = MaterialTheme.typography.titleLarge)
+                    }
                     IconButton(onClick = onAbout) {
                         Icon(Icons.Default.Info, contentDescription = "Tentang")
                     }
@@ -133,6 +137,10 @@ fun HomeScreen(
                         ProjectCard(
                             project = project,
                             onClick = { onOpenProject(project.id) },
+                            onDuplicate = {
+                                viewModel.duplicateProject(project.id) { id -> onOpenProject(id) }
+                            },
+                            onRename = { name -> viewModel.renameProject(project.id, name) },
                             onDelete = { viewModel.deleteProject(project.id) },
                         )
                     }
@@ -178,6 +186,24 @@ fun HomeScreen(
                     onOpenProject(id)
                 }
             },
+            onUndanganTemplate = {
+                showNewDialog = false
+                viewModel.createFromBuiltInAsset("form-presets/surat-undangan.json") { id ->
+                    onOpenProject(id)
+                }
+            },
+            onTugasTemplate = {
+                showNewDialog = false
+                viewModel.createFromBuiltInAsset("form-presets/surat-tugas.json") { id ->
+                    onOpenProject(id)
+                }
+            },
+            onPernyataanTemplate = {
+                showNewDialog = false
+                viewModel.createFromBuiltInAsset("form-presets/surat-pernyataan.json") { id ->
+                    onOpenProject(id)
+                }
+            },
             onImportZip = {
                 showNewDialog = false
                 importZipLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
@@ -202,8 +228,13 @@ fun HomeScreen(
 private fun ProjectCard(
     project: ProjectMeta,
     onClick: () -> Unit,
+    onDuplicate: () -> Unit = {},
+    onRename: (String) -> Unit = {},
     onDelete: () -> Unit,
 ) {
+    var showRename by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var renameText by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(project.name) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -229,6 +260,8 @@ private fun ProjectCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            TextButton(onClick = { showRename = true }) { Text("Rename") }
+            TextButton(onClick = onDuplicate) { Text("Salin") }
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
@@ -237,6 +270,29 @@ private fun ProjectCard(
                 )
             }
         }
+    }
+    if (showRename) {
+        AlertDialog(
+            onDismissRequest = { showRename = false },
+            title = { Text("Rename proyek") },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    singleLine = true,
+                    label = { Text("Nama") },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (renameText.isNotBlank()) onRename(renameText.trim())
+                    showRename = false
+                }) { Text("Simpan") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRename = false }) { Text("Batal") }
+            },
+        )
     }
 }
 
@@ -248,6 +304,9 @@ private fun NewProjectDialog(
     onImportDsx: () -> Unit,
     onFromTemplate: () -> Unit,
     onZsmTemplate: () -> Unit = {},
+    onUndanganTemplate: () -> Unit = {},
+    onTugasTemplate: () -> Unit = {},
+    onPernyataanTemplate: () -> Unit = {},
     onImportZip: () -> Unit = {},
 ) {
     val options = listOf(
@@ -272,6 +331,15 @@ private fun NewProjectDialog(
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 TextButton(onClick = onZsmTemplate, modifier = Modifier.fillMaxWidth()) {
                     Text("Template ZSM — Izin Kunjungan", modifier = Modifier.fillMaxWidth())
+                }
+                TextButton(onClick = onUndanganTemplate, modifier = Modifier.fillMaxWidth()) {
+                    Text("Template — Surat Undangan", modifier = Modifier.fillMaxWidth())
+                }
+                TextButton(onClick = onTugasTemplate, modifier = Modifier.fillMaxWidth()) {
+                    Text("Template — Surat Tugas", modifier = Modifier.fillMaxWidth())
+                }
+                TextButton(onClick = onPernyataanTemplate, modifier = Modifier.fillMaxWidth()) {
+                    Text("Template — Surat Pernyataan", modifier = Modifier.fillMaxWidth())
                 }
                 TextButton(onClick = onImportDsx, modifier = Modifier.fillMaxWidth()) {
                     Text("Impor document.dsx", modifier = Modifier.fillMaxWidth())

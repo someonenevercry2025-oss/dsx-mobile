@@ -39,19 +39,38 @@ import androidx.compose.ui.unit.dp
 fun SectionCard(
     title: String,
     modifier: Modifier = Modifier,
+    help: String? = null,
     content: @Composable () -> Unit,
 ) {
+    var showHelp by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                )
+                if (!help.isNullOrBlank()) {
+                    TextButton(onClick = { showHelp = true }) { Text("?") }
+                }
+            }
+            if (showHelp && !help.isNullOrBlank()) {
+                Text(
+                    help,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
             Spacer(Modifier.height(10.dp))
             content()
         }

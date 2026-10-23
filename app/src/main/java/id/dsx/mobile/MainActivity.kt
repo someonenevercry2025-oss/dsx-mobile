@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import id.dsx.mobile.ui.AboutScreen
+import id.dsx.mobile.ui.HelpScreen
 import id.dsx.mobile.ui.EditorScreen
 import id.dsx.mobile.ui.HomeScreen
 import id.dsx.mobile.ui.theme.DSXTheme
@@ -102,10 +103,14 @@ fun DSXNav() {
                 viewModel = vm,
                 onOpenProject = { id -> nav.navigate("editor/$id") },
                 onAbout = { nav.navigate("about") },
+                onHelp = { nav.navigate("help") },
             )
         }
         composable("about") {
             AboutScreen(onBack = { nav.popBackStack() })
+        }
+        composable("help") {
+            HelpScreen(onBack = { nav.popBackStack() })
         }
         composable(
             route = "editor/{projectId}",

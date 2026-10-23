@@ -1,38 +1,29 @@
-# Panduan singkat DSX Mobile 1.0
+# Panduan pengguna DSX Mobile
 
-## Instalasi
-Pasang APK/AAB yang ditandatangani. Tidak perlu Termux, server, atau internet untuk fitur inti.
+## Membuat surat (Form)
 
-## Membuat surat resmi
-1. Ketuk **+** → **Surat resmi**.
-2. Isi kop, nomor, perihal, penerima, dan paragraf.
-3. Opsional: **Pilih gambar** untuk logo.
-4. Ketuk ikon **Build** → **Bagikan** berkas DOCX.
+1. **+** → pilih jenis atau **Template ZSM** / **Surat Undangan**.
+2. Isi **Properti dokumen** (margin, font, spasi) bila perlu.
+3. Isi **Kop**, **Identitas** (nomor, perihal), **Penerima**.
+4. **Salam pembuka** (opsional) + **Pembuka** + paragraf.
+5. **Rincian** on/off; **TTD** multi-kolom + TTD tambahan; **Tembusan**; **Footer**.
+6. **Build** (palu) → bagikan DOCX.
 
-## Form kustom
-1. **+** → **Kustom kosong**.
-2. Ketuk **+** untuk menambah blok (kop, paragraf, tabel, gambar, …).
-3. Ketuk kartu blok untuk mengedit isinya.
+### Wajib sebelum cetak
+- Perihal, Yth./penerima, minimal satu paragraf isi.
+- Ganti `.......` dan `[...]` dengan data asli.
 
-## Mode kode
-Tab **Kode** menampilkan `document.dsx`. Diagnostik muncul otomatis setelah Anda berhenti mengetik. **Format** merapikan sumber.
+### Logo
+**Aset** → unggah → di Form pilih logo, atau di Kode **Sisip**.
 
-## Pratinjau & ekspor
-| Tombol | Hasil |
-|--------|--------|
-| Mata | Pratinjau HTML (perkiraan) |
-| Build | DOCX penuh |
-| PDF | Dialog cetak sistem → Simpan sebagai PDF (**sederhana**, dari HTML) |
+## Mode Kode
+Edit `document.dsx`. **Snippet** dan **Aset** membantu. Lihat `KODE_DSX.md`.
 
-Daftar isi di DOCX perlu **Update Field** di Microsoft Word / WPS.
+## Form ↔ Kode
+- Ke **Kode**: generate dari form (kecuali *kode diutamakan*).
+- Ke **Form**: konversi perkiraan; edit manual bisa hilang — konfirmasi ditampilkan.
+- Edit Kode manual → badge *kode diutamakan* (disimpan di proyek).
 
-## Templat
-Di editor ketuk **Templat**, beri nama, lalu buat proyek baru dari **Dari templat / preset**.
-
-## Impor
-**+** → **Impor document.dsx** → pilih berkas dari penyimpanan.
-
-## Batasan 1.0
-- PDF bukan setara LibreOffice.
-- Tidak ada sinkronisasi awan atau kolaborasi.
-- Tidak ada versi iOS.
+## Backup
+**ZIP** di editor mengekspor proyek. **+ → Impor proyek ZIP** untuk memulihkan.
+**Salin** di daftar proyek menduplikasi folder proyek.

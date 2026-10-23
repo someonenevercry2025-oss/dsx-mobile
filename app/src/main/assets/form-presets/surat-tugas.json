@@ -1,0 +1,48 @@
+{
+  "kind": "surat-resmi",
+  "version": 1,
+  "meta": { "title": "Surat Tugas", "author": "" },
+  "page": { "size": "A4", "margin_top_cm": 2.0, "margin_bottom_cm": 2.0, "margin_left_cm": 2.5, "margin_right_cm": 2.5 },
+  "style": { "font": "Times New Roman", "size": 12, "line": 1.15, "paragraph_space_after_pt": 6, "first_line_indent_cm": 1.0, "ttd_space_lines": 4 },
+  "kop": {
+    "lines": ["NAMA INSTANSI", "Unit kerja"],
+    "alamat": "[Alamat]",
+    "kontak": "Telp/Email: ...",
+    "logo": null, "logo_kanan": null, "logo_lebar_cm": 2.2, "logo_mode": "auto",
+    "garis": "bottom", "garis_tebal_pt": 1.5, "garis_warna": "000000"
+  },
+  "identitas": {
+    "nomor": "[Nomor]/ST/[Bulan]/[Tahun]",
+    "lampiran": "-",
+    "perihal": "Surat Tugas",
+    "perihal_bold": true,
+    "kota_tanggal": "[Kota], [Tanggal]"
+  },
+  "penerima": { "yth": "[Nama petugas]", "baris_tambahan": ["[Jabatan]"], "di": "Tempat" },
+  "salam_buka": "",
+  "pembuka": "Dengan hormat,",
+  "paragraf": [
+    "Berdasarkan kebutuhan kegiatan, dengan ini kami tugaskan:",
+    "Untuk melaksanakan tugas tersebut dengan penuh tanggung jawab. Demikian surat tugas ini dibuat untuk dipergunakan sebagaimana mestinya."
+  ],
+  "tampilkan_rincian": true,
+  "rincian_intro": "Dengan rincian sebagai berikut:",
+  "rincian": [
+    {"label": "Nama", "nilai": "[Nama lengkap]"},
+    {"label": "Jabatan / NIM", "nilai": "[Jabatan atau NIM]"},
+    {"label": "Tugas", "nilai": "[Uraian tugas]"},
+    {"label": "Waktu", "nilai": "[Tanggal / periode]"},
+    {"label": "Tempat", "nilai": "[Lokasi]"}
+  ],
+  "penutup": [],
+  "salam_tutup": "",
+  "penutup_hormat": "Yang menugaskan,",
+  "organisasi_bawah": ["[Jabatan pejabat]"],
+  "ttd": [
+    {"label": "", "jabatan": "[Jabatan]", "nama": "[Nama pejabat]", "identitas": "NIP/NIDN: ...", "jabatan_bawah": ""}
+  ],
+  "ttd_extra": [],
+  "mengetahui": { "aktif": false, "label": "Mengetahui,", "jabatan": "", "nama": "", "nip": "" },
+  "tembusan": ["Arsip"],
+  "footer": { "aktif": false, "motto": "", "kontak": "" }
+}

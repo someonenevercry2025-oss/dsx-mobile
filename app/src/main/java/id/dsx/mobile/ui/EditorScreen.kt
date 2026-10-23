@@ -76,6 +76,7 @@ fun EditorScreen(
     var showAssets by remember { mutableStateOf(false) }
     var showSavePreset by remember { mutableStateOf(false) }
     var confirmMode by remember { mutableStateOf<String?>(null) }
+    var showHelp by remember { mutableStateOf(false) }
     var presetName by remember { mutableStateOf("") }
     var confirmConvert by remember { mutableStateOf(false) }
     var editingBlockIndex by remember { mutableStateOf<Int?>(null) }
@@ -131,6 +132,7 @@ fun EditorScreen(
                         viewModel.refreshAssets()
                         showAssets = true
                     }) { Text("Aset") }
+                    TextButton(onClick = { showHelp = true }) { Text("?") }
                     TextButton(onClick = {
                         val dir = projectDir
                         val out = java.io.File(context.cacheDir, "${dir.name}.zip")
@@ -228,6 +230,21 @@ fun EditorScreen(
                             color = MaterialTheme.colorScheme.tertiary,
                         )
                     }
+                    if (state.formPartialMapping) {
+                        Text(
+                            "  ·  Form terpetakan sebagian",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+                state.modeDiffNote?.let { note ->
+                    Text(
+                        note,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
                 }
                 state.validationHints.forEach { h ->
                     Text(
@@ -315,6 +332,38 @@ Box(Modifier.weight(1f)) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    if (state.buildHistory.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Riwayat build (3 terakhir):", style = MaterialTheme.typography.labelMedium)
+                        state.buildHistory.forEach { h ->
+                            TextButton(onClick = {
+                                val file = java.io.File(h.path)
+                                if (file.exists()) {
+                                    val mime = when {
+                                        h.format.startsWith("pdf") -> "application/pdf"
+                                        h.format == "html" -> "text/html"
+                                        else -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                    }
+                                    val uri = FileProvider.getUriForFile(
+                                        context,
+                                        "${context.packageName}.fileprovider",
+                                        file,
+                                    )
+                                    val share = Intent(Intent.ACTION_SEND).apply {
+                                        type = mime
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(share, "Bagikan lagi"))
+                                }
+                            }) {
+                                Text(
+                                    "• ${h.at} · ${h.format} · ${h.sizeBytes / 1024} KB (bagikan)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -378,8 +427,10 @@ Box(Modifier.weight(1f)) {
     confirmMode?.let { target ->
         val warn = if (target == "form") {
             "Mengonversi kode ke form bersifat perkiraan. Perubahan manual di kode mungkin hilang. Lanjutkan?"
+        } else if (state.codePreferred) {
+            "Kode pernah diedit manual (kode diutamakan). Lanjut tanpa regenerate, atau pakai "Lanjut & regenerate" di build berikutnya dari Form. Beralih ke tab Kode sekarang?"
         } else {
-            "Beralih ke mode kode. document.dsx akan digenerate ulang dari form. Lanjutkan?"
+            "Beralih ke mode kode. document.dsx akan digenerate ulang dari form (kecuali kode diutamakan). Lanjutkan?"
         }
         AlertDialog(
             onDismissRequest = { confirmMode = null },
@@ -478,6 +529,25 @@ Box(Modifier.weight(1f)) {
                 }
             }
         }
+    }
+
+    if (showHelp) {
+        AlertDialog(
+            onDismissRequest = { showHelp = false },
+            title = { Text("Bantuan editor") },
+            text = {
+                Text(
+                    "Form: isi field lalu Build.\n" +
+                    "Properti: margin, font, spasi.\n" +
+                    "Kode: Snippet / Aset / ketuk error untuk loncat baris.\n" +
+                    "Kode diutamakan: edit manual tidak ditimpa Form.\n" +
+                    "Riwayat build: ketuk item untuk bagikan lagi.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showHelp = false }) { Text("OK") }
+            },
+        )
     }
 
     if (showAssets) {

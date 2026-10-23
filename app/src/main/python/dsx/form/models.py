@@ -23,6 +23,14 @@ _SURAT_DEFAULT: dict[str, Any] = {
         "margin_left_cm": 2.5,
         "margin_right_cm": 2.5,
     },
+    "style": {
+        "font": "Times New Roman",
+        "size": 12,
+        "line": 1.15,
+        "paragraph_space_after_pt": 6,
+        "first_line_indent_cm": 1.0,
+        "ttd_space_lines": 4,
+    },
     "kop": {
         "lines": [
             "UNIT KEGIATAN MAHASISWA (UKM)",

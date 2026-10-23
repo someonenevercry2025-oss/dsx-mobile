@@ -5,6 +5,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -100,7 +101,10 @@ private fun SuratFormBody(
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             onStatus("Memproses gambar…")
-            val result = ImageHelper.importImage(context, projectDir, uri, "logo")
+            val st = form.getAsJsonObject("style")
+            val maxE = st?.get("image_max_edge_px")?.asInt ?: 1600
+            val qual = st?.get("image_jpeg_quality")?.asInt ?: 88
+            val result = ImageHelper.importImage(context, projectDir, uri, "logo", maxE, qual)
             result.fold(
                 onSuccess = { rel ->
                     obj("kop").addProperty("logo", rel)
@@ -121,7 +125,10 @@ private fun SuratFormBody(
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             onStatus("Memproses gambar…")
-            val result = ImageHelper.importImage(context, projectDir, uri, "logo_kanan")
+            val st = form.getAsJsonObject("style")
+            val maxE = st?.get("image_max_edge_px")?.asInt ?: 1600
+            val qual = st?.get("image_jpeg_quality")?.asInt ?: 88
+            val result = ImageHelper.importImage(context, projectDir, uri, "logo_kanan", maxE, qual)
             result.fold(
                 onSuccess = { rel ->
                     obj("kop").addProperty("logo_kanan", rel)
@@ -143,7 +150,119 @@ private fun SuratFormBody(
     ) {
         // --- Meta ---
         item {
-            SectionCard("Judul dokumen") {
+            SectionCard("Properti dokumen", help = "Margin, font, spasi, dan tinggi ruang TTD. Preset Resmi/Rapat/Longgar mengatur nilai cepat.") {
+                val page = obj("page")
+                val style = run {
+                    if (!form.has("style") || !form.get("style").isJsonObject) {
+                        val o = JsonObject()
+                        o.addProperty("font", "Times New Roman")
+                        o.addProperty("size", 12)
+                        o.addProperty("line", 1.15)
+                        o.addProperty("paragraph_space_after_pt", 6)
+                        o.addProperty("first_line_indent_cm", 1.0)
+                        o.addProperty("ttd_space_lines", 4)
+                        form.add("style", o)
+                    }
+                    form.getAsJsonObject("style")
+                }
+                FormTextField("Ukuran kertas (A4/Letter)", str(page, "size").ifBlank { "A4" }) {
+                    setStr(page, "size", it)
+                }
+                Spacer(Modifier.height(6.dp))
+                FormTextField("Margin atas (cm)", page.get("margin_top_cm")?.toString()?.trim('"') ?: "2.0") {
+                    page.addProperty("margin_top_cm", it.toDoubleOrNull() ?: 2.0)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField("Margin bawah (cm)", page.get("margin_bottom_cm")?.toString()?.trim('"') ?: "2.0") {
+                    page.addProperty("margin_bottom_cm", it.toDoubleOrNull() ?: 2.0)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField("Margin kiri (cm)", page.get("margin_left_cm")?.toString()?.trim('"') ?: "2.5") {
+                    page.addProperty("margin_left_cm", it.toDoubleOrNull() ?: 2.5)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField("Margin kanan (cm)", page.get("margin_right_cm")?.toString()?.trim('"') ?: "2.5") {
+                    page.addProperty("margin_right_cm", it.toDoubleOrNull() ?: 2.5)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(8.dp))
+                FormTextField("Font", str(style, "font").ifBlank { "Times New Roman" }) {
+                    style.addProperty("font", it); onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField("Ukuran font (pt)", style.get("size")?.toString()?.trim('"') ?: "12") {
+                    style.addProperty("size", it.toDoubleOrNull() ?: 12.0)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField("Spasi baris (1.0 / 1.15 / 1.5)", style.get("line")?.toString()?.trim('"') ?: "1.15") {
+                    style.addProperty("line", it.toDoubleOrNull() ?: 1.15)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField("Spasi antar paragraf (pt)", style.get("paragraph_space_after_pt")?.toString()?.trim('"') ?: "6") {
+                    style.addProperty("paragraph_space_after_pt", it.toDoubleOrNull() ?: 6.0)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField("Indent paragraf pertama (cm)", style.get("first_line_indent_cm")?.toString()?.trim('"') ?: "1.0") {
+                    style.addProperty("first_line_indent_cm", it.toDoubleOrNull() ?: 1.0)
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField("Tinggi ruang TTD (baris 2–8)", style.get("ttd_space_lines")?.toString()?.trim('"') ?: "4") {
+                    style.addProperty("ttd_space_lines", (it.toIntOrNull() ?: 4).coerceIn(2, 8))
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(8.dp))
+                Text("Preset cepat:", style = MaterialTheme.typography.labelMedium)
+                Row {
+                    TextButton(onClick = {
+                        style.addProperty("font", "Times New Roman")
+                        style.addProperty("size", 12.0)
+                        style.addProperty("line", 1.15)
+                        style.addProperty("paragraph_space_after_pt", 6.0)
+                        onFormChange(form.deepCopy())
+                    }) { Text("Resmi 12pt") }
+                    TextButton(onClick = {
+                        style.addProperty("font", "Times New Roman")
+                        style.addProperty("size", 11.0)
+                        style.addProperty("line", 1.0)
+                        style.addProperty("paragraph_space_after_pt", 4.0)
+                        onFormChange(form.deepCopy())
+                    }) { Text("Rapat 11pt") }
+                    TextButton(onClick = {
+                        style.addProperty("font", "Times New Roman")
+                        style.addProperty("size", 12.0)
+                        style.addProperty("line", 1.5)
+                        style.addProperty("paragraph_space_after_pt", 10.0)
+                        onFormChange(form.deepCopy())
+                    }) { Text("Longgar 1.5") }
+                }
+                Spacer(Modifier.height(8.dp))
+                FormTextField(
+                    "Kompres gambar max sisi (px, 800–2400)",
+                    style.get("image_max_edge_px")?.toString()?.trim('"') ?: "1600",
+                ) {
+                    style.addProperty("image_max_edge_px", (it.toIntOrNull() ?: 1600).coerceIn(800, 2400))
+                    onFormChange(form.deepCopy())
+                }
+                Spacer(Modifier.height(4.dp))
+                FormTextField(
+                    "Kualitas JPEG kompres (60–95)",
+                    style.get("image_jpeg_quality")?.toString()?.trim('"') ?: "88",
+                ) {
+                    style.addProperty("image_jpeg_quality", (it.toIntOrNull() ?: 88).coerceIn(60, 95))
+                    onFormChange(form.deepCopy())
+                }
+            }
+        }
+
+        item {
+            SectionCard("Judul dokumen", help = "Judul internal proyek dan nama penulis (meta dokumen).") {
                 val meta = obj("meta")
                 FormTextField("Judul", str(meta, "title")) { setStr(meta, "title", it) }
                 Spacer(Modifier.height(8.dp))
@@ -153,7 +272,7 @@ private fun SuratFormBody(
 
         // --- Kop ---
         item {
-            SectionCard("Kop surat") {
+            SectionCard("Kop surat", help = "Nama lembaga, alamat, kontak, dan logo. Logo diunggah ke folder assets proyek.") {
                 val kop = obj("kop")
                 StringListEditor(
                     label = "Baris nama lembaga",
@@ -211,7 +330,7 @@ private fun SuratFormBody(
 
         // --- Identitas ---
         item {
-            SectionCard("Nomor / Lampiran / Perihal") {
+            SectionCard("Nomor / Lampiran / Perihal", help = "Identitas surat. Perihal biasanya dicetak tebal.") {
                 val idn = obj("identitas")
                 FormTextField("Nomor", str(idn, "nomor")) { setStr(idn, "nomor", it) }
                 Spacer(Modifier.height(8.dp))
@@ -256,7 +375,7 @@ private fun SuratFormBody(
 
         // --- Isi ---
         item {
-            SectionCard("Isi surat") {
+            SectionCard("Isi surat", help = "Salam opsional, pembuka formal, dan paragraf isi. Ganti titik-titik sebelum cetak.") {
                 FormTextField(
                     "Salam pembuka (opsional, mis. Assalamu'alaikum...)",
                     form.get("salam_buka")?.asString ?: "",
@@ -373,7 +492,7 @@ private fun SuratFormBody(
 
         // --- TTD: form surat menyimpan "ttd" sebagai ARRAY [{jabatan, nama}] ---
         item {
-            SectionCard("Tanda tangan (baris utama)") {
+            SectionCard("Tanda tangan (baris utama)", help = "Setiap kolom = satu penandatangan berdampingan. Opsional unggah gambar paraf/stempel.") {
                 Text(
                     "Tiap penandatangan = satu kolom. Isi Label (opsional), Jabatan, Nama, Identitas (NIP/NIDN/NRA), Jabatan bawah.",
                     style = MaterialTheme.typography.bodySmall,
@@ -406,6 +525,18 @@ private fun SuratFormBody(
                         FormTextField("Jabatan bawah (mis. Ketua Umum)", str(o, "jabatan_bawah")) {
                             o.addProperty("jabatan_bawah", it); onFormChange(form.deepCopy())
                         }
+                        Spacer(Modifier.height(4.dp))
+                        FormTextField(
+                            "Gambar paraf/stempel (assets/...)",
+                            str(o, "gambar"),
+                        ) {
+                            o.addProperty("gambar", it); onFormChange(form.deepCopy())
+                        }
+                        Text(
+                            "Unggah lewat Aset, lalu isi path mis. assets/paraf_ketua.png",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         TextButton(onClick = {
                             ttdArr.remove(index)
                             onFormChange(form.deepCopy())
@@ -427,7 +558,7 @@ private fun SuratFormBody(
         }
 
         item {
-            SectionCard("TTD tambahan (full lebar)") {
+            SectionCard("TTD tambahan (full lebar)", help = "Blok full-lebar di bawah baris utama, misalnya Menyetujui.") {
                 Text(
                     "Untuk blok seperti \"Menyetujui\" di bawah baris utama.",
                     style = MaterialTheme.typography.bodySmall,
@@ -472,7 +603,7 @@ private fun SuratFormBody(
 
         // --- Mengetahui ---
         item {
-            SectionCard("Mengetahui (opsional, format lama)") {
+            SectionCard("Mengetahui (opsional, format lama)", help = "Blok mengetahui tunggal (format lama). Lebih fleksibel pakai TTD multi-kolom di atas.") {
                 val m = obj("mengetahui")
                 FormSwitch(
                     label = "Tampilkan blok mengetahui",
@@ -496,7 +627,7 @@ private fun SuratFormBody(
         }
 
         item {
-            SectionCard("Tembusan") {
+            SectionCard("Tembusan", help = "Daftar tembusan bernomor di akhir surat.") {
                 val items = run {
                     val arr = form.getAsJsonArray("tembusan") ?: JsonArray()
                     arr.map { it.asString }
@@ -516,7 +647,7 @@ private fun SuratFormBody(
         }
 
         item {
-            SectionCard("Footer") {
+            SectionCard("Footer", help = "Motto dan baris sosmed di bagian paling bawah.") {
                 val foot = obj("footer")
                 FormSwitch(
                     label = "Tampilkan footer",

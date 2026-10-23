@@ -156,6 +156,21 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun renameProject(id: String, name: String) {
+        repo.renameProject(id, name)
+        refresh()
+    }
+
+    fun duplicateProject(id: String, onCreated: (String) -> Unit) {
+        viewModelScope.launch {
+            val result = repo.duplicateProject(id)
+            result.fold(
+                onSuccess = { meta -> refresh(); onCreated(meta.id) },
+                onFailure = { e -> _state.value = _state.value.copy(error = e.message) },
+            )
+        }
+    }
+
     fun clearError() {
         _state.value = _state.value.copy(error = null)
     }

@@ -117,6 +117,8 @@ fun CodeEditorPane(
     cursorLine: Int = 1,
 ) {
     var showSnippets by remember { mutableStateOf(false) }
+    var highlightLine by remember { mutableStateOf<Int?>(null) }
+    var highlightSnippet by remember { mutableStateOf<String?>(null) }
     var field by remember { mutableStateOf(TextFieldValue(text, TextRange(text.length))) }
 
     LaunchedEffect(text) {
@@ -144,6 +146,16 @@ fun CodeEditorPane(
                     )
                 }
             }
+        }
+        if (highlightLine != null) {
+            Text(
+                "Baris ${highlightLine}: ${highlightSnippet?.take(80) ?: ""}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
         }
         OutlinedTextField(
             value = field,
@@ -175,7 +187,8 @@ fun CodeEditorPane(
                     "Diagnostik (ketuk untuk loncat ke baris)",
                     style = MaterialTheme.typography.labelLarge,
                 )
-                diagnostics.forEach { d ->
+                diagnostics.forEach { raw ->
+                    val d = diagnosticHint(raw)
                     val line = Regex("""L(\d+):""").find(d)?.groupValues?.getOrNull(1)?.toIntOrNull()
                     Text(
                         d,
@@ -187,6 +200,9 @@ fun CodeEditorPane(
                                 if (line != null) {
                                     Modifier.clickable {
                                         field = jumpTextToLine(field.text, line)
+                                        highlightLine = line
+                                        val lines = field.text.split("\n")
+                                        highlightSnippet = lines.getOrNull(line - 1)
                                         onJumpToLine(line)
                                     }
                                 } else {
@@ -200,13 +216,31 @@ fun CodeEditorPane(
     }
 }
 
-/** Move cursor approximately to a 1-based line number. */
+/**
+ * Select the whole target line (1-based) so the user sees a highlight in the field.
+ */
 fun jumpTextToLine(text: String, line: Int): TextFieldValue {
-    val lines = text.split('\n')
-    val idx = (line - 1).coerceIn(0, (lines.size - 1).coerceAtLeast(0))
-    var offset = 0
+    val lines = text.split("\n")
+    if (lines.isEmpty()) return TextFieldValue(text)
+    val idx = (line - 1).coerceIn(0, lines.lastIndex)
+    var start = 0
     for (i in 0 until idx) {
-        offset += lines[i].length + 1
+        start += lines[i].length + 1
     }
-    return TextFieldValue(text, TextRange(offset, offset))
+    val end = start + lines[idx].length
+    return TextFieldValue(text, TextRange(start, end))
+}
+
+/** Human-friendly hints for common DSX diagnostic codes. */
+fun diagnosticHint(raw: String): String {
+    val code = Regex("""([A-Z_]+)""").find(raw)?.groupValues?.getOrNull(1) ?: ""
+    val tip = when (code) {
+        "NOT_A_VALUE_FUNCTION" -> " Tip: di dalam CELL pakai IMAGE(\"assets/...\"), bukan FIGURE."
+        "UNTERMINATED_STRING" -> " Tip: periksa kutip; newline dalam string harus \n."
+        "INVALID_VALUE" -> " Tip: valign hanya top, center, atau bottom."
+        "EMPTY_TEXT" -> " Tip: P kosong hanya peringatan, boleh diabaikan."
+        "UNKNOWN_COMPONENT" -> " Tip: cek ejaan nama komponen DSX."
+        else -> ""
+    }
+    return if (tip.isEmpty()) raw else raw + tip
 }
