@@ -428,7 +428,7 @@ Box(Modifier.weight(1f)) {
         val warn = if (target == "form") {
             "Mengonversi kode ke form bersifat perkiraan. Perubahan manual di kode mungkin hilang. Lanjutkan?"
         } else if (state.codePreferred) {
-            "Kode pernah diedit manual (kode diutamakan). Lanjut tanpa regenerate, atau pakai "Lanjut & regenerate" di build berikutnya dari Form. Beralih ke tab Kode sekarang?"
+            "Kode pernah diedit manual (kode diutamakan). Lanjut tanpa regenerate dari Form. Beralih ke tab Kode sekarang?"
         } else {
             "Beralih ke mode kode. document.dsx akan digenerate ulang dari form (kecuali kode diutamakan). Lanjutkan?"
         }
